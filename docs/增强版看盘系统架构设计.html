@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TradingAssistant 增强版看盘系统架构设计</title>
+    <style>
+        :root {
+            --bg: #f5f7fb;
+            --paper: #ffffff;
+            --ink: #1f2937;
+            --muted: #5b6474;
+            --line: #d7deea;
+            --brand: #116466;
+            --brand-soft: #dff1ef;
+            --accent: #f4a259;
+            --warn: #b85c38;
+            --good: #2d6a4f;
+            --shadow: 0 16px 40px rgba(17, 100, 102, 0.08);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+            line-height: 1.7;
+            color: var(--ink);
+            background:
+                radial-gradient(circle at top right, rgba(17, 100, 102, 0.08), transparent 28%),
+                linear-gradient(180deg, #f8fbfd 0%, var(--bg) 100%);
+        }
+
+        header {
+            padding: 48px 24px 28px;
+            background: linear-gradient(135deg, #0f3d3e 0%, #116466 56%, #2a7f80 100%);
+            color: #fff;
+        }
+
+        header .wrap,
+        main {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1,
+        h2,
+        h3 {
+            margin: 0 0 12px;
+            line-height: 1.3;
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            letter-spacing: 0.02em;
+        }
+
+        h2 {
+            font-size: 1.5rem;
+            color: var(--brand);
+            margin-top: 28px;
+        }
+
+        h3 {
+            font-size: 1.05rem;
+            color: #163b5c;
+            margin-top: 20px;
+        }
+
+        p,
+        li {
+            color: var(--ink);
+            font-size: 0.98rem;
+        }
+
+        .subtitle,
+        .meta {
+            color: rgba(255, 255, 255, 0.88);
+        }
+
+        .subtitle {
+            max-width: 900px;
+            margin-top: 14px;
+            font-size: 1.02rem;
+        }
+
+        .meta {
+            margin-top: 18px;
+            font-size: 0.92rem;
+        }
+
+        main {
+            padding: 24px;
+        }
+
+        section {
+            background: var(--paper);
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+        }
+
+        .grid {
+            display: grid;
+            gap: 16px;
+        }
+
+        .grid.two {
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        }
+
+        .grid.three {
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        }
+
+        .card {
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            padding: 16px 18px;
+            background: linear-gradient(180deg, #ffffff 0%, #fbfcfe 100%);
+        }
+
+        .card h3 {
+            margin-top: 0;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .badge.brand {
+            background: var(--brand-soft);
+            color: var(--brand);
+        }
+
+        .badge.warn {
+            background: #fde8dd;
+            color: var(--warn);
+        }
+
+        .badge.good {
+            background: #dff3e8;
+            color: var(--good);
+        }
+
+        ul {
+            margin: 10px 0 0 22px;
+            padding: 0;
+        }
+
+        code {
+            padding: 2px 6px;
+            border-radius: 6px;
+            background: #eef3f8;
+            color: #18405d;
+            font-family: "Consolas", "Courier New", monospace;
+            font-size: 0.92em;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 12px;
+        }
+
+        th,
+        td {
+            border: 1px solid var(--line);
+            padding: 12px 14px;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        th {
+            background: #eff6f8;
+            color: #154b4d;
+        }
+
+        .note {
+            border-left: 4px solid var(--accent);
+            background: #fff7ef;
+            padding: 14px 16px;
+            border-radius: 10px;
+            color: #5b4125;
+        }
+
+        .diagram {
+            overflow-x: auto;
+            padding: 8px 0 0;
+        }
+
+        svg {
+            max-width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .small {
+            color: var(--muted);
+            font-size: 0.92rem;
+        }
+
+        .footer {
+            color: var(--muted);
+            font-size: 0.92rem;
+        }
+
+        .link-list a {
+            color: var(--brand);
+            text-decoration: none;
+        }
+
+        .link-list a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+<header>
+    <div class="wrap">
+        <h1>TradingAssistant 增强版看盘系统架构设计</h1>
+        <p class="subtitle">
+            面向“类似同花顺的看盘 WebApp”目标，结合 <code>Reflex</code>、<code>FastAPI</code>、<code>iTick</code>、
+            <code>OpenTrade</code> 的能力边界，设计一套适合实时分时图、实时 K 线、多指标增量计算与多标的订阅分发的增强版系统架构。
+        </p>
+        <p class="meta">
+            生成日期：2026-06-07（Asia/Hong_Kong） |
+            研究范围：官方文档、设计模式文章、项目 <code>.venv</code> 内依赖源码入口 |
+            文档状态：V1，适合进入实现前评审
+        </p>
+    </div>
+</header>
+
+<main>
+    <section>
+        <h2>1. 任务定约</h2>
+        <div class="grid two">
+            <div class="card">
+                <span class="badge brand">Objective</span>
+                <ul>
+                    <li>设计一个增强版看盘系统架构，而不是停留在 MVP。</li>
+                    <li>支持实时分时图、实时 K 线、多周期聚合、全量指标计算和多页面订阅分发。</li>
+                    <li>为后续基于 Python 闭环的实现提供清晰模块边界与演化路径。</li>
+                </ul>
+            </div>
+            <div class="card">
+                <span class="badge warn">Non-goals</span>
+                <ul>
+                    <li>本阶段不实现业务代码，不定义最终 UI 细节。</li>
+                    <li>本阶段不解决生产环境授权、商业分发许可和运维容量采购问题。</li>
+                    <li>本阶段不把所有指标都写成最终代码，只定义指标引擎策略。</li>
+                </ul>
+            </div>
+            <div class="card">
+                <span class="badge good">Constraints</span>
+                <ul>
+                    <li>前端框架固定为 <code>Reflex</code>，不把 Node/NPM 作为应用开发主链。</li>
+                    <li>行情主数据源固定为 <code>iTick</code>。</li>
+                    <li>指标能力允许用 <code>OpenTrade</code> 做补充。</li>
+                    <li>服务门面固定为 <code>FastAPI</code>。</li>
+                </ul>
+            </div>
+            <div class="card">
+                <span class="badge brand">Verification</span>
+                <ul>
+                    <li>架构必须解释实时链路如何闭环。</li>
+                    <li>架构必须说明哪些模式被用于隔离哪些变化点。</li>
+                    <li>架构必须能映射到当前依赖的真实 API 契约，而不是抽象空谈。</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <h2>2. 研究结论摘要</h2>
+        <div class="grid two">
+            <div class="card">
+                <h3>iTick</h3>
+                <ul>
+                    <li><code>itick-sdk 0.1.0</code> 的 Python 封装很薄，核心就是 REST + WebSocket 客户端。</li>
+                    <li>WebSocket 客户端内置心跳、重连、读线程，但属于线程模型，不是 asyncio 模型。</li>
+                    <li>说明它适合作为“上游接入适配层”，不适合直接成为系统的统一事件总线。</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h3>OpenTrade</h3>
+                <ul>
+                    <li><code>OpenTrade</code> 更强在指标增强、观察输出和多 backend 门面，而不是实时流处理。</li>
+                    <li><code>opentrade.enrichment.indicators</code> 直接把大量指标附着到历史 DataFrame 上。</li>
+                    <li>它适合做“指标公式库 + 离线校验器 + 辅助观察层”，不适合做高频增量计算总线。</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h3>Reflex</h3>
+                <ul>
+                    <li><code>Reflex 0.9.4</code> 本质是带状态管理和 WebSocket 事件处理的前后端一体框架。</li>
+                    <li>内部有 <code>StateManager</code>、事件队列，以及 <code>MEMORY / DISK / REDIS</code> 三种状态管理模式。</li>
+                    <li>说明它适合承载页面状态和交互；当前方案默认走 <code>MEMORY</code>，不承接所有逐笔行情事件。</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h3>FastAPI</h3>
+                <ul>
+                    <li><code>FastAPI</code> 适合作为系统门面、统一 WebSocket / SSE / REST 出口。</li>
+                    <li>它应成为“行情内核”和“Reflex 页面层”之间的协议边界。</li>
+                    <li>这能避免高频实时链路与页面状态机耦死。</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <h2>3. 设计模式选型与变化点映射</h2>
+        <p>
+            参考《AI Coding 时代，理解设计模式变得更加重要》中的核心观点，本系统优先围绕“变化点”选模式，而不是为了模式而模式。
+            实时行情系统的主要变化点包括：上游数据源协议、分发通道、K 线聚合算法、指标计算算法、图表展示方式、会话级订阅管理。
+        </p>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                <tr>
+                    <th>模式</th>
+                    <th>隔离的变化点</th>
+                    <th>在本系统中的落点</th>
+                    <th>为什么必要</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <td>Adapter</td>
+                    <td>iTick REST / WebSocket 的原始协议、字段风格、线程模型</td>
+                    <td><code>MarketDataAdapter</code>、<code>SymbolAdapter</code>、<code>QuoteNormalizer</code></td>
+                    <td>避免上游字段和连接策略直接污染领域层与页面层。</td>
+                </tr>
+                <tr>
+                    <td>Facade</td>
+                    <td>页面不应了解订阅、回填、指标、聚合的编排细节</td>
+                    <td><code>MarketFacade</code> / <code>ChartFacade</code></td>
+                    <td>把“打开一张实时图表”收敛成单一入口。</td>
+                </tr>
+                <tr>
+                    <td>Observer</td>
+                    <td>行情到达后有哪些消费者需要响应</td>
+                    <td>事件总线、主题订阅、图表广播、预警监听</td>
+                    <td>行情源不应该知道有多少页面、多少指标、多少下游处理器。</td>
+                </tr>
+                <tr>
+                    <td>Strategy</td>
+                    <td>K 线聚合规则、指标计算规则、推送节流策略</td>
+                    <td><code>BarAggregationStrategy</code>、<code>IndicatorStrategy</code>、<code>PushPolicyStrategy</code></td>
+                    <td>算法会持续变化，不能长成条件泥潭。</td>
+                </tr>
+                <tr>
+                    <td>Factory Method</td>
+                    <td>不同市场、不同周期、不同图表上下文的处理器创建</td>
+                    <td><code>ProcessorFactory</code>、<code>IndicatorEngineFactory</code></td>
+                    <td>创建逻辑集中，扩市场和扩周期时影响面更小。</td>
+                </tr>
+                <tr>
+                    <td>Proxy</td>
+                    <td>缓存、权限、限流、懒加载、降级访问</td>
+                    <td><code>CachedHistoryProxy</code>、<code>RateLimitProxy</code></td>
+                    <td>保证页面请求不会直接穿透到高成本上游调用。</td>
+                </tr>
+                <tr>
+                    <td>Template Method</td>
+                    <td>“回填历史 → 订阅实时 → 聚合 → 计算指标 → 广播”骨架</td>
+                    <td><code>RealtimePipelineTemplate</code></td>
+                    <td>主流程固定，局部步骤允许替换。</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="note">
+            本系统明确不推荐滥用 <code>Singleton</code>。全局注册表、配置门面可以是单例语义，
+            但可变业务状态、订阅上下文、会话状态不应偷懒做成全局对象。
+        </div>
+    </section>
+
+    <section>
+        <h2>4. 总体架构</h2>
+        <p>
+            增强版目标下，必须把系统拆成“页面层”“门面层”“行情内核层”“计算层”“缓存与分发层”五块。
+            核心原则是：<strong>让 Reflex 管页面，让 FastAPI 管协议，让行情内核管实时状态</strong>。
+        </p>
+        <div class="diagram">
+            <svg viewBox="0 0 1180 560" xmlns="http://www.w3.org/2000/svg" aria-label="总体架构图">
+                <defs>
+                    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                        <path d="M0,0 L10,3 L0,6 Z" fill="#47606f"/>
+                    </marker>
+                </defs>
+                <rect x="20" y="20" width="1140" height="520" rx="22" fill="#f9fbfd" stroke="#d7deea"/>
+
+                <rect x="60" y="70" width="230" height="120" rx="16" fill="#e4f2f2" stroke="#116466"/>
+                <text x="175" y="108" text-anchor="middle" font-size="24" fill="#0f4d4e" font-weight="700">前端展示层</text>
+                <text x="175" y="138" text-anchor="middle" font-size="17" fill="#2a4d5b">Reflex 页面</text>
+                <text x="175" y="164" text-anchor="middle" font-size="15" fill="#2a4d5b">自选 / 图表 / 详情 / 条件面板</text>
+
+                <rect x="340" y="70" width="230" height="120" rx="16" fill="#eef5fb" stroke="#3d6c8a"/>
+                <text x="455" y="108" text-anchor="middle" font-size="24" fill="#234d67" font-weight="700">服务门面层</text>
+                <text x="455" y="138" text-anchor="middle" font-size="17" fill="#2a4d5b">FastAPI REST / WS / SSE</text>
+                <text x="455" y="164" text-anchor="middle" font-size="15" fill="#2a4d5b">鉴权 / 订阅路由 / 协议统一</text>
+
+                <rect x="620" y="50" width="490" height="180" rx="16" fill="#fff8ef" stroke="#d69744"/>
+                <text x="865" y="84" text-anchor="middle" font-size="24" fill="#7c4d0e" font-weight="700">行情内核层</text>
+                <rect x="650" y="105" width="130" height="88" rx="12" fill="#ffffff" stroke="#d7deea"/>
+                <text x="715" y="138" text-anchor="middle" font-size="17" fill="#243745">iTick Adapter</text>
+                <text x="715" y="163" text-anchor="middle" font-size="13" fill="#4d6470">REST / WS 接入</text>
+                <rect x="800" y="105" width="140" height="88" rx="12" fill="#ffffff" stroke="#d7deea"/>
+                <text x="870" y="138" text-anchor="middle" font-size="17" fill="#243745">Subscription Hub</text>
+                <text x="870" y="163" text-anchor="middle" font-size="13" fill="#4d6470">主题与会话映射</text>
+                <rect x="960" y="105" width="120" height="88" rx="12" fill="#ffffff" stroke="#d7deea"/>
+                <text x="1020" y="138" text-anchor="middle" font-size="17" fill="#243745">Bar Builder</text>
+                <text x="1020" y="163" text-anchor="middle" font-size="13" fill="#4d6470">1m 形成中 K 线</text>
+
+                <rect x="620" y="270" width="490" height="220" rx="16" fill="#f5f3fb" stroke="#7f5aa2"/>
+                <text x="865" y="304" text-anchor="middle" font-size="24" fill="#5a3b82" font-weight="700">计算与缓存层</text>
+                <rect x="650" y="330" width="140" height="120" rx="12" fill="#ffffff" stroke="#d7deea"/>
+                <text x="720" y="360" text-anchor="middle" font-size="17" fill="#243745">Indicator Engine</text>
+                <text x="720" y="386" text-anchor="middle" font-size="13" fill="#4d6470">增量指标</text>
+                <text x="720" y="406" text-anchor="middle" font-size="13" fill="#4d6470">OpenTrade 补充</text>
+                <rect x="815" y="330" width="140" height="120" rx="12" fill="#ffffff" stroke="#d7deea"/>
+                <text x="885" y="360" text-anchor="middle" font-size="17" fill="#243745">State Store</text>
+                <text x="885" y="386" text-anchor="middle" font-size="13" fill="#4d6470">MEMORY 默认运行</text>
+                <text x="885" y="406" text-anchor="middle" font-size="13" fill="#4d6470">预留 Redis 升级接口</text>
+                <rect x="980" y="330" width="100" height="120" rx="12" fill="#ffffff" stroke="#d7deea"/>
+                <text x="1030" y="360" text-anchor="middle" font-size="17" fill="#243745">Alert Bus</text>
+                <text x="1030" y="386" text-anchor="middle" font-size="13" fill="#4d6470">事件 / 预警</text>
+                <text x="1030" y="406" text-anchor="middle" font-size="13" fill="#4d6470">观察者分发</text>
+
+                <line x1="290" y1="130" x2="340" y2="130" stroke="#47606f" stroke-width="3" marker-end="url(#arrow)"/>
+                <line x1="570" y1="130" x2="620" y2="130" stroke="#47606f" stroke-width="3" marker-end="url(#arrow)"/>
+                <line x1="1020" y1="193" x2="1020" y2="270" stroke="#47606f" stroke-width="3" marker-end="url(#arrow)"/>
+                <line x1="720" y1="270" x2="720" y2="218" stroke="#47606f" stroke-width="3" marker-end="url(#arrow)"/>
+                <line x1="885" y1="270" x2="885" y2="218" stroke="#47606f" stroke-width="3" marker-end="url(#arrow)"/>
+                <line x1="815" y1="390" x2="790" y2="390" stroke="#47606f" stroke-width="3" marker-end="url(#arrow)"/>
+                <line x1="955" y1="390" x2="980" y2="390" stroke="#47606f" stroke-width="3" marker-end="url(#arrow)"/>
+                <line x1="650" y1="390" x2="570" y2="390" stroke="#47606f" stroke-width="3"/>
+                <line x1="570" y1="390" x2="570" y2="155" stroke="#47606f" stroke-width="3"/>
+                <line x1="570" y1="155" x2="340" y2="155" stroke="#47606f" stroke-width="3" marker-end="url(#arrow)"/>
+            </svg>
+        </div>
+    </section>
+
+    <section>
+        <h2>5. 关键实时流程</h2>
+        <div class="diagram">
+            <svg viewBox="0 0 1180 720" xmlns="http://www.w3.org/2000/svg" aria-label="实时数据流程图">
+                <defs>
+                    <marker id="flow-arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                        <path d="M0,0 L10,3 L0,6 Z" fill="#47606f"/>
+                    </marker>
+                </defs>
+
+                <rect x="90" y="40" width="200" height="70" rx="14" fill="#e4f2f2" stroke="#116466"/>
+                <text x="190" y="82" text-anchor="middle" font-size="20" fill="#0f4d4e" font-weight="700">1. 页面请求图表</text>
+
+                <rect x="90" y="150" width="200" height="84" rx="14" fill="#eef5fb" stroke="#3d6c8a"/>
+                <text x="190" y="188" text-anchor="middle" font-size="18" fill="#234d67">2. FastAPI Facade</text>
+                <text x="190" y="212" text-anchor="middle" font-size="14" fill="#3b5a6b">解析 symbol / period / indicators</text>
+
+                <rect x="90" y="280" width="200" height="90" rx="14" fill="#fff8ef" stroke="#d69744"/>
+                <text x="190" y="318" text-anchor="middle" font-size="18" fill="#7c4d0e">3. 历史回填</text>
+                <text x="190" y="342" text-anchor="middle" font-size="14" fill="#6a553a">缓存命中优先</text>
+                <text x="190" y="360" text-anchor="middle" font-size="14" fill="#6a553a">否则走 iTick REST</text>
+
+                <rect x="370" y="280" width="200" height="90" rx="14" fill="#fff8ef" stroke="#d69744"/>
+                <text x="470" y="318" text-anchor="middle" font-size="18" fill="#7c4d0e">4. 初始化指标</text>
+                <text x="470" y="342" text-anchor="middle" font-size="14" fill="#6a553a">OpenTrade 全量补齐</text>
+                <text x="470" y="360" text-anchor="middle" font-size="14" fill="#6a553a">建立增量状态</text>
+
+                <rect x="650" y="280" width="200" height="90" rx="14" fill="#fff8ef" stroke="#d69744"/>
+                <text x="750" y="318" text-anchor="middle" font-size="18" fill="#7c4d0e">5. 建立订阅</text>
+                <text x="750" y="342" text-anchor="middle" font-size="14" fill="#6a553a">Session 绑定 Topic</text>
+                <text x="750" y="360" text-anchor="middle" font-size="14" fill="#6a553a">共享上游连接</text>
+
+                <rect x="930" y="280" width="200" height="90" rx="14" fill="#fff8ef" stroke="#d69744"/>
+                <text x="1030" y="318" text-anchor="middle" font-size="18" fill="#7c4d0e">6. iTick WS 推送</text>
+                <text x="1030" y="342" text-anchor="middle" font-size="14" fill="#6a553a">tick / quote / kline</text>
+                <text x="1030" y="360" text-anchor="middle" font-size="14" fill="#6a553a">进入 Adapter</text>
+
+                <rect x="930" y="430" width="200" height="100" rx="14" fill="#f5f3fb" stroke="#7f5aa2"/>
+                <text x="1030" y="468" text-anchor="middle" font-size="18" fill="#5a3b82">7. Bar Builder</text>
+                <text x="1030" y="492" text-anchor="middle" font-size="14" fill="#644a83">更新 forming 1m bar</text>
+                <text x="1030" y="510" text-anchor="middle" font-size="14" fill="#644a83">必要时闭合旧 bar</text>
+
+                <rect x="650" y="430" width="200" height="100" rx="14" fill="#f5f3fb" stroke="#7f5aa2"/>
+                <text x="750" y="468" text-anchor="middle" font-size="18" fill="#5a3b82">8. 指标增量计算</text>
+                <text x="750" y="492" text-anchor="middle" font-size="14" fill="#644a83">O(1) 优先</text>
+                <text x="750" y="510" text-anchor="middle" font-size="14" fill="#644a83">窗口指标用 ring buffer</text>
+
+                <rect x="370" y="430" width="200" height="100" rx="14" fill="#f5f3fb" stroke="#7f5aa2"/>
+                <text x="470" y="468" text-anchor="middle" font-size="18" fill="#5a3b82">9. 分发与缓存</text>
+                <text x="470" y="492" text-anchor="middle" font-size="14" fill="#644a83">写 MEMORY 热缓存</text>
+                <text x="470" y="510" text-anchor="middle" font-size="14" fill="#644a83">广播到订阅会话</text>
+
+                <rect x="90" y="430" width="200" height="100" rx="14" fill="#e4f2f2" stroke="#116466"/>
+                <text x="190" y="468" text-anchor="middle" font-size="18" fill="#0f4d4e">10. 前端局部刷新</text>
+                <text x="190" y="492" text-anchor="middle" font-size="14" fill="#3a5966">图表数据局部补点</text>
+                <text x="190" y="510" text-anchor="middle" font-size="14" fill="#3a5966">页面状态不整树重算</text>
+
+                <line x1="190" y1="110" x2="190" y2="150" stroke="#47606f" stroke-width="3" marker-end="url(#flow-arrow)"/>
+                <line x1="190" y1="234" x2="190" y2="280" stroke="#47606f" stroke-width="3" marker-end="url(#flow-arrow)"/>
+                <line x1="290" y1="325" x2="370" y2="325" stroke="#47606f" stroke-width="3" marker-end="url(#flow-arrow)"/>
+                <line x1="570" y1="325" x2="650" y2="325" stroke="#47606f" stroke-width="3" marker-end="url(#flow-arrow)"/>
+                <line x1="850" y1="325" x2="930" y2="325" stroke="#47606f" stroke-width="3" marker-end="url(#flow-arrow)"/>
+                <line x1="1030" y1="370" x2="1030" y2="430" stroke="#47606f" stroke-width="3" marker-end="url(#flow-arrow)"/>
+                <line x1="930" y1="480" x2="850" y2="480" stroke="#47606f" stroke-width="3" marker-end="url(#flow-arrow)"/>
+                <line x1="650" y1="480" x2="570" y2="480" stroke="#47606f" stroke-width="3" marker-end="url(#flow-arrow)"/>
+                <line x1="370" y1="480" x2="290" y2="480" stroke="#47606f" stroke-width="3" marker-end="url(#flow-arrow)"/>
+            </svg>
+        </div>
+        <div class="note">
+            关键判断：分时图和实时 K 线的“初始化”与“增量更新”必须拆开。
+            初始化阶段允许使用 <code>OpenTrade</code> 做全量 DataFrame 指标补齐，
+            但实时阶段必须转为增量策略，否则计算成本会随着窗口长度和订阅数线性放大。
+        </div>
+    </section>
+
+    <section>
+        <h2>6. 模块划分</h2>
+        <div class="grid three">
+            <div class="card">
+                <h3><code>market_gateway</code></h3>
+                <ul>
+                    <li>封装 iTick REST / WebSocket 接入。</li>
+                    <li>屏蔽线程模型、心跳、重连、原始字段差异。</li>
+                    <li>统一输出标准化事件：<code>TickEvent</code>、<code>QuoteEvent</code>、<code>KlineEvent</code>。</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h3><code>subscription_hub</code></h3>
+                <ul>
+                    <li>管理 symbol + period + topic 与 session 的映射。</li>
+                    <li>实现“一个上游订阅，多前端共享”的扇出。</li>
+                    <li>负责无人订阅时延迟退订。</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h3><code>history_service</code></h3>
+                <ul>
+                    <li>封装历史 K 线回填与缓存。</li>
+                    <li>当前优先命中进程内 MEMORY 缓存，其次调用 iTick REST。</li>
+                    <li>为指标初始化提供稳定基线数据。</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h3><code>bar_engine</code></h3>
+                <ul>
+                    <li>维护正在形成的 1m bar。</li>
+                    <li>以 1m 为基础聚合出 5m / 15m / 30m / 60m / 日线。</li>
+                    <li>处理闭市、缺口、停牌、跨交易段问题。</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h3><code>indicator_engine</code></h3>
+                <ul>
+                    <li>分为初始化器、增量计算器、校验器三层。</li>
+                    <li>初始化器可复用 OpenTrade DataFrame 指标。</li>
+                    <li>增量计算器用状态对象承载 EMA、RSI、MACD、BOLL 等递推数据。</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h3><code>push_gateway</code></h3>
+                <ul>
+                    <li>对外暴露 FastAPI WebSocket / SSE。</li>
+                    <li>根据前端能力决定推送粒度。</li>
+                    <li>支持图表补点、指标补点、列表快照分通道下发。</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h3><code>reflex_app</code></h3>
+                <ul>
+                    <li>负责页面布局、选股、图层切换、指标开关。</li>
+                    <li>保留用户交互状态、自选列表、窗口布局等低频状态。</li>
+                    <li>不负责承载所有逐笔行情状态。</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h3><code>alert_center</code></h3>
+                <ul>
+                    <li>监听指标交叉、阈值突破、异动事件。</li>
+                    <li>采用 Observer 模式与主链路解耦。</li>
+                    <li>后续可扩展站内提醒、Webhook、策略信号。</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h3><code>ops_support</code></h3>
+                <ul>
+                    <li>指标计算耗时、每主题订阅数、上游连接健康度。</li>
+                    <li>缓存命中率、延迟分位数、丢包率、重连次数。</li>
+                    <li>为增强版进入生产前提供可观测性。</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <h2>7. 实时图表设计</h2>
+        <div class="grid two">
+            <div class="card">
+                <h3>分时图</h3>
+                <ul>
+                    <li>基线数据：使用当日分时历史快照或当日 1m 数据回填。</li>
+                    <li>实时驱动：优先用 <code>tick</code>，次选 <code>quote</code>。</li>
+                    <li>衍生线：均价线、涨跌幅线、成交量柱、成交额柱。</li>
+                    <li>推送策略：高频补点，低频重算窗口统计。</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h3>实时 K 线</h3>
+                <ul>
+                    <li>首屏用 REST K 线回填。</li>
+                    <li>实时层维护 <code>forming bar</code>，前端显示“未闭合 K 线”。</li>
+                    <li>多周期一律从 1m 或更细粒度聚合，避免上游多路重复订阅。</li>
+                    <li>指标分为“形成中指标”和“闭合后正式指标”两套视图。</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <h2>8. 指标引擎设计</h2>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                <tr>
+                    <th>层次</th>
+                    <th>职责</th>
+                    <th>建议实现</th>
+                    <th>示例指标</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <td>初始化层</td>
+                    <td>对历史窗口一次性补齐指标列</td>
+                    <td>调用 <code>opentrade.enrichment.indicators</code></td>
+                    <td>MA、EMA、MACD、RSI、KDJ、BOLL、ATR、VWAP、SuperTrend</td>
+                </tr>
+                <tr>
+                    <td>增量层</td>
+                    <td>每次新 tick / 新 bar 到达时最小代价更新</td>
+                    <td>自定义状态对象 + Strategy</td>
+                    <td>EMA、MACD、RSI、OBV、ATR、VWAP、PVT</td>
+                </tr>
+                <tr>
+                    <td>窗口层</td>
+                    <td>维护固定窗口、极值与统计摘要</td>
+                    <td>Ring Buffer / Deque / 单调队列</td>
+                    <td>BOLL、Donchian、CCI、WR、KDJ</td>
+                </tr>
+                <tr>
+                    <td>校验层</td>
+                    <td>验证增量算法与全量算法的一致性</td>
+                    <td>定时抽样重跑 OpenTrade</td>
+                    <td>随机标的随机周期一致性比对</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <h3>指标实现原则</h3>
+        <ul>
+            <li>同一指标必须定义统一字段名和统一精度规则，避免前后端名称漂移。</li>
+            <li>形成中的 bar 可以计算预估指标，但必须显式标记为 <code>provisional</code>。</li>
+            <li>闭合后的 bar 才写入正式缓存，并触发预警判断和高周期聚合。</li>
+            <li>OpenTrade 在本项目中的最佳角色是“初始化器 + 校验器 + 指标覆盖补充源”。</li>
+        </ul>
+    </section>
+
+    <section>
+        <h2>9. Reflex 与 FastAPI 的边界</h2>
+        <div class="grid two">
+            <div class="card">
+                <h3>Reflex 适合承载</h3>
+                <ul>
+                    <li>页面路由、布局、筛选条件、用户交互。</li>
+                    <li>自选分组、当前选中标的、当前选中周期、当前开启指标集合。</li>
+                    <li>低频业务状态和用户会话偏好。</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h3>Reflex 不适合承载</h3>
+                <ul>
+                    <li>每个 symbol 的逐笔 tick 状态。</li>
+                    <li>所有图表全量数据的 server-side state 镜像。</li>
+                    <li>高频到达的原始实时数据缓冲。</li>
+                </ul>
+            </div>
+        </div>
+        <div class="note">
+            原因很直接：Reflex 内部有状态序列化和事件处理队列；虽然它支持 MEMORY / DISK / REDIS，
+            但本项目默认把高频实时状态放在行情内核，不放进 Reflex State。
+            如果把高频行情直接灌入 Reflex State，会把页面状态管理问题和实时数据流问题硬绑到一起，
+            后续扩标的、扩多页面、扩共享订阅时成本会迅速上升。
+        </div>
+    </section>
+
+    <section>
+        <h2>10. 缓存与分发策略</h2>
+        <div class="grid three">
+            <div class="card">
+                <h3>L1：进程内热缓存</h3>
+                <ul>
+                    <li>保存热门 symbol 的最新 quote、forming 1m bar、最近 N 根 bar。</li>
+                    <li>目标：低延迟，作为当前版本的主缓存层。</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h3>L2：Redis 预留层</h3>
+                <ul>
+                    <li>当前不启用，但接口上预留共享行情快照、主题订阅计数、历史窗口缓存、跨进程广播能力。</li>
+                    <li>目标：未来支撑多 worker、跨实例广播与重连恢复。</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h3>L3：上游调用</h3>
+                <ul>
+                    <li>历史数据和冷 symbol 首次访问时才命中 iTick REST。</li>
+                    <li>目标：控制成本、降低速率限制风险。</li>
+                </ul>
+            </div>
+        </div>
+        <h3>广播策略</h3>
+        <ul>
+            <li>列表行情和图表行情拆 topic，不让一个页面为另一个页面付出无关流量。</li>
+            <li>图表 topic 采用 <code>symbol + timeframe + indicator-set-hash</code> 作为二级细分键。</li>
+            <li>可以把原始上游事件和前端消费事件分离，前者高频，后者经聚合和节流后再推送。</li>
+        </ul>
+        <h3>为升级 Redis 预留的抽象边界</h3>
+        <ul>
+            <li>缓存访问统一走 <code>CacheStore</code> 接口，先提供 <code>MemoryCacheStore</code> 实现。</li>
+            <li>主题广播统一走 <code>TopicBus</code> 接口，先提供进程内实现，后续可替换为 Redis Pub/Sub。</li>
+            <li>订阅注册统一走 <code>SubscriptionRegistry</code> 接口，先使用进程内字典，后续可迁移到 Redis 哈希或集合。</li>
+            <li>历史窗口快照与形成中 bar 快照都使用统一序列化结构，避免未来迁移时重写协议。</li>
+        </ul>
+        <div class="note">
+            当前策略是“默认 MEMORY，设计上不绑死 MEMORY”。
+            这意味着业务逻辑不能直接依赖 Python 全局字典，而必须依赖抽象接口访问缓存和广播。
+        </div>
+    </section>
+
+    <section>
+        <h2>11. 推荐的接口契约</h2>
+        <div class="grid two">
+            <div class="card">
+                <h3>REST</h3>
+                <ul>
+                    <li><code>GET /api/symbol/search</code></li>
+                    <li><code>GET /api/chart/bootstrap?symbol=...&period=1m&bars=240</code></li>
+                    <li><code>GET /api/watchlist</code></li>
+                    <li><code>GET /api/market/snapshot?symbols=...</code></li>
+                </ul>
+            </div>
+            <div class="card">
+                <h3>WebSocket / SSE</h3>
+                <ul>
+                    <li><code>/ws/chart</code>：图表增量</li>
+                    <li><code>/ws/quotes</code>：列表行情</li>
+                    <li><code>/ws/alerts</code>：指标事件与异动</li>
+                    <li>消息统一包含 <code>topic</code>、<code>ts</code>、<code>version</code>、<code>payload_type</code></li>
+                </ul>
+            </div>
+        </div>
+        <h3>图表增量消息示意</h3>
+        <div class="card">
+            <p class="small">
+                <code>
+                    { "topic": "chart:HK.00700:1m", "payload_type": "bar_update",
+                    "ts": 1749302400, "provisional": true,
+                    "bar": { "t": 1749302400, "o": 512.0, "h": 513.4, "l": 511.8, "c": 513.1, "v": 182300 },
+                    "indicators": { "ma5": 510.92, "macd_dif": 1.23, "rsi14": 61.8 } }
+                </code>
+            </p>
+        </div>
+    </section>
+
+    <section>
+        <h2>12. 分阶段实施建议</h2>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                <tr>
+                    <th>阶段</th>
+                    <th>目标</th>
+                    <th>必须完成</th>
+                    <th>暂缓项</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <td>P1：增强版骨架</td>
+                    <td>跑通单市场、多 symbol、共享订阅</td>
+                    <td>FastAPI 门面、iTick Adapter、MEMORY 缓存、分时 + 1m K 线、MA/MACD/RSI/BOLL</td>
+                    <td>复杂预警、复杂画图工具</td>
+                </tr>
+                <tr>
+                    <td>P2：指标扩展</td>
+                    <td>把 OpenTrade 能力接入为初始化与校验层</td>
+                    <td>SuperTrend、ATR、VWAP、OBV、Donchian、CCI 等</td>
+                    <td>策略回测闭环</td>
+                </tr>
+                <tr>
+                    <td>P3：多页面协同</td>
+                    <td>在保持接口不变的前提下，从 MEMORY 平滑升级到 Redis</td>
+                    <td>Redis Pub/Sub、Redis 缓存后端、会话级订阅回收、图表差量推送</td>
+                    <td>跨地域部署</td>
+                </tr>
+                <tr>
+                    <td>P4：接近成熟终端</td>
+                    <td>接近专业看盘交互体验</td>
+                    <td>多窗格联动、异动提示、画线、模板保存、指标参数化</td>
+                    <td>复杂策略交易联动</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section>
+        <h2>13. 主要风险与应对</h2>
+        <div class="grid two">
+            <div class="card">
+                <h3>风险：上游数据授权与再分发限制</h3>
+                <ul>
+                    <li>技术上能做，不代表许可上能公开分发。</li>
+                    <li>应在立项前确认 iTick 的使用范围、商业授权和再分发限制。</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h3>风险：把 Reflex 当实时总线</h3>
+                <ul>
+                    <li>会导致状态臃肿、序列化成本上升、页面刷新过重。</li>
+                    <li>应坚持“Reflex 管页面，FastAPI 管流，内核管状态”。</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h3>风险：MEMORY 方案天然不支持横向扩容</h3>
+                <ul>
+                    <li>单进程方案简单，但无法天然共享跨实例热状态和广播。</li>
+                    <li>应通过 <code>CacheStore / TopicBus / SubscriptionRegistry</code> 抽象，确保后续可平滑升级到 Redis。</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h3>风险：指标全量重算</h3>
+                <ul>
+                    <li>随着订阅数增长会迅速失控。</li>
+                    <li>应尽早投入增量指标状态模型和一致性校验工具。</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h3>风险：多周期直接多路订阅</h3>
+                <ul>
+                    <li>会增加上游连接压力和事件风暴。</li>
+                    <li>应统一以 1m 为基础聚合高周期，必要时再对更细粒度做特例。</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <h2>14. 本次结论</h2>
+        <p>
+            这个项目要做成“增强版”，正确方向不是把 <code>Reflex</code>、<code>iTick</code>、
+            <code>OpenTrade</code>、<code>FastAPI</code> 四者直接平铺拼接，而是明确：
+        </p>
+        <ul>
+            <li><code>iTick</code> 是上游数据源与协议接入层。</li>
+            <li><code>FastAPI</code> 是系统门面与实时分发边界。</li>
+            <li><code>OpenTrade</code> 是指标初始化与补充校验层，而不是实时流核心。</li>
+            <li><code>Reflex</code> 是页面组织与交互层，而不是高频行情状态容器。</li>
+            <li>当前默认运行态存储选择 <code>MEMORY</code>，但缓存、广播、订阅注册均通过抽象接口预留升级到 Redis 的空间。</li>
+        </ul>
+        <p>
+            只要守住这个边界，再用 Adapter、Facade、Observer、Strategy、Proxy、Template Method
+            去压住变化点，后续实现就能在保持 Python 技术闭环的前提下，逐步逼近专业看盘终端体验。
+        </p>
+    </section>
+
+    <section class="footer">
+        <h2>15. 参考依据</h2>
+        <ul class="link-list">
+            <li><a href="https://docs.itick.org/" target="_blank" rel="noreferrer">iTick 官方文档</a></li>
+            <li><a href="https://github.com/vortezwohl/OpenTrade" target="_blank" rel="noreferrer">OpenTrade 仓库</a></li>
+            <li><a href="https://vortezwohl.github.io/software-engineering/2026/05/22/AI-Coding-%E6%97%B6%E4%BB%A3-%E7%90%86%E8%A7%A3%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F%E5%8F%98%E5%BE%97%E6%9B%B4%E5%8A%A0%E9%87%8D%E8%A6%81.html" target="_blank" rel="noreferrer">AI Coding 时代，理解设计模式变得更加重要</a></li>
+            <li>本地依赖源码入口：<code>.venv\Lib\site-packages\itick</code>、<code>opentrade</code>、<code>reflex</code>、<code>fastapi</code></li>
+        </ul>
+    </section>
+</main>
+</body>
+</html>
