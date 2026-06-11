@@ -12,4 +12,5 @@ import reflex as rx
 
 config = rx.Config(
     app_name="tradingassistant",
+    app_module_import="tradingassistant.frontend.app",
 )
