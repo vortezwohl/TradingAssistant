@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import json
+import os
 from urllib.parse import urlencode
 
 import reflex as rx
@@ -17,7 +18,10 @@ import reflex as rx
 class WatchPageState(rx.State):
     """描述看盘页面的低频交互状态。"""
 
-    api_base_url: str = "http://127.0.0.1:8000"
+    api_base_url: str = os.getenv(
+        "TRADINGASSISTANT_API_BASE_URL",
+        "http://127.0.0.1:8001",
+    )
     region: str = "HK"
     code: str = "00700"
     period: str = "1m"
