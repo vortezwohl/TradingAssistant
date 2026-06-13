@@ -1,16 +1,7 @@
-"""提供本地可启动的默认运行时装配入口。
-
-该模块的职责是把 MemoryCacheStore、TopicBus、SubscriptionRegistry、
-历史回填服务、指标引擎和 FastAPI 门面装配成一个可运行的默认实例，
-方便本地开发直接启动后端服务。
-
-当前阶段默认使用内置的演示历史数据网关，以保证在没有 iTick 凭据时也能启动。
-后续如果提供真实的 iTick token，可以沿着这里的工厂函数平滑替换为真实网关。
-"""
+"""提供本地可启动的默认运行时装配入口。"""
 
 from __future__ import annotations
 
-import os
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
@@ -26,11 +17,12 @@ from tradingassistant.infrastructure.subscription_registry import (
 )
 from tradingassistant.infrastructure.topic_bus import InMemoryTopicBus
 from tradingassistant.market_data.gateway import ITickMarketGateway
+from tradingassistant.settings import ITICK_TOKEN
 from tradingassistant.transport.app import MarketMonitorService, create_app
 
 
 class DemoHistoryGateway:
-    """提供本地开发可用的演示历史数据。"""
+    """提供本地演示历史数据。"""
 
     def get_stock_history(
         self,
@@ -64,7 +56,7 @@ class DemoHistoryGateway:
 
 @dataclass(slots=True)
 class AppRuntime:
-    """封装后端运行时中需要复用的核心对象。"""
+    """封装后端运行时依赖。"""
 
     app: FastAPI
     service: MarketMonitorService
@@ -75,10 +67,10 @@ class AppRuntime:
 
 
 def build_default_runtime() -> AppRuntime:
-    """构造默认可启动运行时。
+    """构造默认运行时对象。
 
     Returns:
-        已完成依赖装配的运行时对象。
+        已完成装配的运行时对象。
     """
 
     cache_store = MemoryCacheStore()
@@ -87,9 +79,8 @@ def build_default_runtime() -> AppRuntime:
     metrics = RuntimeMetrics()
     indicator_engine = IncrementalIndicatorEngine()
 
-    itick_token = os.getenv("TRADINGASSISTANT_ITICK_TOKEN")
-    if itick_token:
-        history_gateway = ITickMarketGateway(itick_token)
+    if ITICK_TOKEN:
+        history_gateway = ITickMarketGateway(ITICK_TOKEN)
     else:
         history_gateway = DemoHistoryGateway()
 
@@ -121,6 +112,6 @@ def build_default_runtime() -> AppRuntime:
 
 
 def create_default_app() -> FastAPI:
-    """返回默认可启动的 FastAPI 应用对象。"""
+    """返回默认 FastAPI 应用对象。"""
 
     return build_default_runtime().app

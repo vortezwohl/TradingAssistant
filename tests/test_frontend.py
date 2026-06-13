@@ -1,10 +1,4 @@
-"""验证 Reflex 看盘前端的状态边界、图表契约与页面结构。
-
-本文件重点验证：
-1. 页面状态只保留低频上下文，不回灌高频 bars 或逐笔流；
-2. 图表 bootstrap 与增量更新契约稳定可序列化；
-3. 页面组件树已接入浏览器图表容器和上下文切换控件。
-"""
+"""验证 Reflex 前端状态与页面结构。"""
 
 from __future__ import annotations
 
@@ -19,13 +13,14 @@ from tradingassistant.frontend.charting import (
     indicators_json_literal,
 )
 from tradingassistant.frontend.state import WatchPageState
+from tradingassistant.settings import API_BASE_URL
 
 
 class WatchPageStateTests(unittest.TestCase):
-    """验证看盘页面状态边界。"""
+    """验证看盘页状态。"""
 
     def test_state_keeps_low_frequency_page_fields_only(self) -> None:
-        """页面状态应只包含低频配置字段。"""
+        """确认页面状态仅保留低频字段。"""
 
         field_names = set(WatchPageState.get_fields())
         self.assertIn("api_base_url", field_names)
@@ -40,7 +35,7 @@ class WatchPageStateTests(unittest.TestCase):
         self.assertNotIn("raw_market_stream", field_names)
 
     def test_state_exposes_bootstrap_and_subscription_intents(self) -> None:
-        """页面层应暴露 bootstrap 地址与 websocket 订阅意图。"""
+        """确认 bootstrap 和订阅意图对外暴露。"""
 
         fields = WatchPageState.get_fields()
         self.assertEqual(fields["bootstrap_endpoint"].default, "/api/chart/bootstrap")
@@ -54,17 +49,17 @@ class WatchPageStateTests(unittest.TestCase):
         self.assertIn("indicator_selection_json", WatchPageState.vars)
 
     def test_state_supports_context_switch_fields(self) -> None:
-        """页面状态应提供切换图表上下文所需字段。"""
+        """确认默认 API 地址来自统一配置源。"""
 
         fields = WatchPageState.get_fields()
-        self.assertEqual(fields["api_base_url"].default, "http://127.0.0.1:8001")
+        self.assertEqual(fields["api_base_url"].default, API_BASE_URL)
         self.assertIn("HK.00700", fields["watchlist"].default_factory())
         self.assertIn("1m", fields["available_periods"].default_factory())
         self.assertIn("ma5", fields["indicator_candidates"].default_factory())
 
 
 class ChartContractTests(unittest.TestCase):
-    """验证图表输入契约。"""
+    """验证图表契约。"""
 
     def test_bootstrap_contract_roundtrip(self) -> None:
         """bootstrap 契约应可往返序列化。"""
@@ -87,17 +82,17 @@ class ChartContractTests(unittest.TestCase):
         self.assertTrue(rebuilt.indicators["provisional"])
 
     def test_indicator_json_literal_keeps_enabled_order(self) -> None:
-        """指标选择 JSON 应维持前端开关顺序。"""
+        """指标 JSON 应保持开关顺序。"""
 
         rendered = indicators_json_literal(["ma5", "macd"])
         self.assertEqual(rendered, '{"enabled":["ma5","macd"]}')
 
 
 class WatchPageRenderingTests(unittest.TestCase):
-    """验证页面组件树已接入图表前端。"""
+    """验证页面组件树。"""
 
     def test_index_contains_chart_runtime_and_controls(self) -> None:
-        """页面应包含图表容器、ECharts 运行脚本与切换控件。"""
+        """页面应包含图表运行时与控件。"""
 
         rendered = str(index())
         self.assertIn("watch-chart-root", rendered)
