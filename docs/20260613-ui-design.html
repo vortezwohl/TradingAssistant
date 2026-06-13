@@ -837,6 +837,88 @@ button { cursor: pointer; }
   letter-spacing: 0.05em;
 }
 
+.analysis-row {
+  display: grid;
+  gap: 10px;
+  padding: 10px;
+  border-bottom: 1px solid #141d27;
+  background: #0b1118;
+}
+
+.analysis-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.analysis-title-block {
+  min-width: 0;
+}
+
+.analysis-title {
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.analysis-subtitle {
+  margin-top: 4px;
+  color: var(--text-dim);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.analysis-stamp {
+  flex: 0 0 auto;
+  padding: 2px 6px;
+  border: 1px solid #2b3846;
+  color: var(--amber);
+  font: 700 10px var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.analysis-body {
+  color: var(--text-soft);
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.analysis-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border: 1px solid #18232d;
+  background: #081018;
+}
+
+.analysis-metric {
+  padding: 6px 8px;
+  border-right: 1px solid #18232d;
+}
+
+.analysis-metric:last-child {
+  border-right: 0;
+}
+
+.analysis-metric-label {
+  display: block;
+  color: var(--text-dim);
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+.analysis-metric-value {
+  display: block;
+  margin-top: 4px;
+  color: var(--text);
+  font: 700 11px var(--mono);
+}
+
 .text-up { color: var(--green); }
 .text-down { color: var(--red); }
 .text-amber { color: var(--amber); }
@@ -1033,6 +1115,7 @@ const DEPTH_MODES = [
   { key: "imbalance", label: "Imbalance" }
 ];
 const RAIL_TABS = [
+  { key: "analysis", label: "Analysis" },
   { key: "tape", label: "Tape" },
   { key: "signals", label: "Signals" },
   { key: "news", label: "News" }
@@ -1045,11 +1128,10 @@ const state = {
   activeRoute: "main",
   activeMoversTab: "leaders",
   depthMode: "ladder",
-  railTab: "tape",
+  railTab: "analysis",
   overlays: new Set(["MA", "EMA", "BOLL", "VWAP"]),
   sortMode: "code"
 };
-
 const macroData = [
   ["Rates", "UST10Y 4.18"],
   ["Dollar", "DXY 104.62"],
@@ -1655,6 +1737,56 @@ function renderOrderBook(model) {
 }
 
 function renderRail(model) {
+  if (state.railTab === "analysis") {
+    const direction = model.changePct >= 0 ? "Constructive" : "Defensive";
+    const confidence = model.changePct >= 0 ? "76" : "61";
+    const riskBias = Math.abs(model.changePct) > 1.8 ? "Elevated" : "Measured";
+    const cadence = state.activeScale === "30S" || state.activeScale === "1M" ? "Every 5 min" : state.activeScale === "1D" ? "Every 30 min" : "Every 2 hours";
+    const analysisCards = [
+      {
+        title: "AI Regime Read",
+        subtitle: `${model.meta.code} / ${state.activeRoute.toUpperCase()} / scheduled push`,
+        stamp: "Latest",
+        body: `${direction} tone remains intact as price trades ${model.last.close >= model.analytics.vwap.at(-1) ? "above" : "near"} VWAP and the active route still shows supportive internal structure. The desk should treat pullbacks as review points rather than immediate reversals until volume participation fades materially.`,
+        metrics: [["Confidence", `${confidence}%`], ["Refresh", cadence], ["Risk", riskBias]]
+      },
+      {
+        title: "Flow And Structure",
+        subtitle: "Automated summary / order book + tape + indicators",
+        stamp: "Queued",
+        body: `Resting depth remains ${model.changePct >= 0 ? "firmer on the bid side" : "more cautious on the offer side"}, while mock execution prints still imply ${model.changePct >= 0 ? "buyers are willing to lift" : "sellers are controlling short-term tempo"}. Technical overlays stay ${state.overlays.size >= 3 ? "well aligned" : "partially aligned"} with the current route selection.`,
+        metrics: [["Depth", state.depthMode.toUpperCase()], ["Overlays", `${state.overlays.size} live`], ["Next Push", "14:35"]]
+      },
+      {
+        title: "Risk Notes",
+        subtitle: "What the scheduled AI push would flag next",
+        stamp: "Watch",
+        body: `Monitor for a break ${model.changePct >= 0 ? "back under" : "back above"} the short moving average cluster, a spread expansion beyond the recent average, or a visible slowdown in participation. Any two of these conditions together would downgrade the current view on the next automated analysis cycle.`,
+        metrics: [["VWAP Gap", formatSigned(((model.last.close - model.analytics.vwap.at(-1)) / model.analytics.vwap.at(-1)) * 100, 2, "%")], ["ATR", formatNumber(model.analytics.atr.at(-1))], ["Bias", direction.toUpperCase()]]
+      }
+    ];
+    document.getElementById("railPanel").innerHTML = analysisCards.map(card => `
+      <section class="analysis-row">
+        <div class="analysis-head">
+          <div class="analysis-title-block">
+            <div class="analysis-title">${card.title}</div>
+            <div class="analysis-subtitle">${card.subtitle}</div>
+          </div>
+          <div class="analysis-stamp">${card.stamp}</div>
+        </div>
+        <div class="analysis-body">${card.body}</div>
+        <div class="analysis-metrics">
+          ${card.metrics.map(metric => `
+            <div class="analysis-metric">
+              <span class="analysis-metric-label">${metric[0]}</span>
+              <span class="analysis-metric-value">${metric[1]}</span>
+            </div>
+          `).join("")}
+        </div>
+      </section>
+    `).join("");
+    return;
+  }
   if (state.railTab === "tape") {
     const rows = Array.from({ length: 14 }, (_, index) => {
       const side = index % 3 === 0 ? "SELL" : "BUY";
@@ -1678,7 +1810,7 @@ function renderRail(model) {
       ["Trend continuation", "MA stack remains positively aligned and pullbacks hold above VWAP."],
       ["Liquidity pocket", "Offer depth thins two ticks above last trade while bid queue refills."],
       ["Momentum carry", "MACD and RSI remain constructive on active route settings."],
-      ["Execution note", "Simulated child-order slices would favor passive accumulation." ]
+      ["Execution note", "Simulated child-order slices would favor passive accumulation."]
     ];
     document.getElementById("railPanel").innerHTML = signals.map(item => `
       <div class="signal-row">
@@ -1701,7 +1833,6 @@ function renderRail(model) {
     </div>
   `).join("");
 }
-
 function renderAll() {
   const model = buildModel(state.activeCode, state.activeScale);
   renderMacroStrip();
