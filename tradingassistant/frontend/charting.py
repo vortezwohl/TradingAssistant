@@ -10,9 +10,11 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, ClassVar
 
 import reflex as rx
+
+from .theme import TRADING_COLORS, metric_row_style, summary_panel_style
 
 
 ECHARTS_CDN_URL = "https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"
@@ -211,28 +213,31 @@ def _chart_runtime_script(container_id: str) -> str:
     return {{
       animation: false,
       backgroundColor: "transparent",
-      color: ["#1f6feb", "#f97316", "#22c55e", "#ef4444", "#0f766e", "#eab308"],
+      color: ["#f6b04d", "#4aa8ff", "#31c48d", "#ff6b57", "#88f0ff", "#ffd166"],
       grid: [
-        {{ left: 56, right: 24, top: 52, height: "46%" }},
-        {{ left: 56, right: 24, top: "60%", height: "14%" }},
-        {{ left: 56, right: 24, top: "79%", height: "12%" }},
-        {{ left: 56, right: 24, top: "93%", height: "7%" }},
+        {{ left: 58, right: 26, top: 56, height: "45%" }},
+        {{ left: 58, right: 26, top: "60%", height: "13%" }},
+        {{ left: 58, right: 26, top: "78%", height: "11%" }},
+        {{ left: 58, right: 26, top: "92%", height: "7%" }},
       ],
       legend: {{
-        top: 10,
+        top: 12,
         left: 18,
-        textStyle: {{ color: "#0f172a", fontSize: 12 }},
+        itemWidth: 12,
+        itemHeight: 8,
+        textStyle: {{ color: "#c7d2e0", fontSize: 12 }},
       }},
       tooltip: {{
         trigger: "axis",
         axisPointer: {{ type: "cross" }},
-        backgroundColor: "rgba(15, 23, 42, 0.92)",
-        borderWidth: 0,
-        textStyle: {{ color: "#f8fafc" }},
+        backgroundColor: "rgba(4, 8, 13, 0.94)",
+        borderColor: "rgba(120, 144, 172, 0.3)",
+        borderWidth: 1,
+        textStyle: {{ color: "#eff4fb" }},
       }},
       axisPointer: {{
         link: [{{ xAxisIndex: "all" }}],
-        label: {{ backgroundColor: "#334155" }},
+        label: {{ backgroundColor: "#142132", color: "#eff4fb" }},
       }},
       dataZoom: [
         {{
@@ -246,7 +251,14 @@ def _chart_runtime_script(container_id: str) -> str:
           type: "slider",
           xAxisIndex: [0, 1, 2, 3],
           bottom: 6,
-          height: 18,
+          height: 16,
+          borderColor: "rgba(120, 144, 172, 0.24)",
+          backgroundColor: "rgba(8, 12, 18, 0.9)",
+          fillerColor: "rgba(246, 139, 44, 0.18)",
+          dataBackground: {{
+            lineStyle: {{ color: "rgba(120, 144, 172, 0.42)" }},
+            areaStyle: {{ color: "rgba(18, 26, 40, 0.92)" }},
+          }},
         }},
       ],
       xAxis: [
@@ -254,8 +266,9 @@ def _chart_runtime_script(container_id: str) -> str:
           type: "category",
           data: seriesData.categoryData,
           boundaryGap: true,
-          axisLine: {{ lineStyle: {{ color: "#94a3b8" }} }},
-          axisLabel: {{ color: "#475569" }},
+          axisLine: {{ lineStyle: {{ color: "rgba(120, 144, 172, 0.42)" }} }},
+          axisLabel: {{ color: "#8fa4bb" }},
+          splitLine: {{ show: false }},
           min: "dataMin",
           max: "dataMax",
         }},
@@ -264,57 +277,60 @@ def _chart_runtime_script(container_id: str) -> str:
           gridIndex: 1,
           data: seriesData.categoryData,
           boundaryGap: true,
-          axisLine: {{ lineStyle: {{ color: "#94a3b8" }} }},
+          axisLine: {{ lineStyle: {{ color: "rgba(120, 144, 172, 0.42)" }} }},
           axisLabel: {{ show: false }},
+          splitLine: {{ show: false }},
         }},
         {{
           type: "category",
           gridIndex: 2,
           data: seriesData.categoryData,
           boundaryGap: true,
-          axisLine: {{ lineStyle: {{ color: "#94a3b8" }} }},
+          axisLine: {{ lineStyle: {{ color: "rgba(120, 144, 172, 0.42)" }} }},
           axisLabel: {{ show: false }},
+          splitLine: {{ show: false }},
         }},
         {{
           type: "category",
           gridIndex: 3,
           data: seriesData.categoryData,
           boundaryGap: true,
-          axisLine: {{ lineStyle: {{ color: "#94a3b8" }} }},
-          axisLabel: {{ color: "#475569", fontSize: 11 }},
+          axisLine: {{ lineStyle: {{ color: "rgba(120, 144, 172, 0.42)" }} }},
+          axisLabel: {{ color: "#8fa4bb", fontSize: 11 }},
+          splitLine: {{ show: false }},
         }},
       ],
       yAxis: [
         {{
           scale: true,
-          axisLine: {{ lineStyle: {{ color: "#94a3b8" }} }},
-          splitLine: {{ lineStyle: {{ color: "#e2e8f0" }} }},
-          axisLabel: {{ color: "#475569" }},
+          axisLine: {{ lineStyle: {{ color: "rgba(120, 144, 172, 0.42)" }} }},
+          splitLine: {{ lineStyle: {{ color: "rgba(120, 144, 172, 0.13)" }} }},
+          axisLabel: {{ color: "#8fa4bb" }},
         }},
         {{
           gridIndex: 1,
           scale: true,
           splitNumber: 2,
-          axisLine: {{ lineStyle: {{ color: "#94a3b8" }} }},
-          splitLine: {{ lineStyle: {{ color: "#e2e8f0" }} }},
-          axisLabel: {{ color: "#475569" }},
+          axisLine: {{ lineStyle: {{ color: "rgba(120, 144, 172, 0.42)" }} }},
+          splitLine: {{ lineStyle: {{ color: "rgba(120, 144, 172, 0.12)" }} }},
+          axisLabel: {{ color: "#8fa4bb" }},
         }},
         {{
           gridIndex: 2,
           scale: true,
           splitNumber: 2,
-          axisLine: {{ lineStyle: {{ color: "#94a3b8" }} }},
-          splitLine: {{ lineStyle: {{ color: "#e2e8f0" }} }},
-          axisLabel: {{ color: "#475569" }},
+          axisLine: {{ lineStyle: {{ color: "rgba(120, 144, 172, 0.42)" }} }},
+          splitLine: {{ lineStyle: {{ color: "rgba(120, 144, 172, 0.12)" }} }},
+          axisLabel: {{ color: "#8fa4bb" }},
         }},
         {{
           gridIndex: 3,
           min: 0,
           max: 100,
           splitNumber: 2,
-          axisLine: {{ lineStyle: {{ color: "#94a3b8" }} }},
-          splitLine: {{ lineStyle: {{ color: "#e2e8f0" }} }},
-          axisLabel: {{ color: "#475569" }},
+          axisLine: {{ lineStyle: {{ color: "rgba(120, 144, 172, 0.42)" }} }},
+          splitLine: {{ lineStyle: {{ color: "rgba(120, 144, 172, 0.12)" }} }},
+          axisLabel: {{ color: "#8fa4bb" }},
         }},
       ],
       series: [
@@ -323,10 +339,10 @@ def _chart_runtime_script(container_id: str) -> str:
           type: "candlestick",
           data: seriesData.candleData,
           itemStyle: {{
-            color: "#ef4444",
-            color0: "#22c55e",
-            borderColor: "#ef4444",
-            borderColor0: "#22c55e",
+            color: "#ff6b57",
+            color0: "#31c48d",
+            borderColor: "#ff6b57",
+            borderColor0: "#31c48d",
           }},
         }},
         {{
@@ -335,7 +351,7 @@ def _chart_runtime_script(container_id: str) -> str:
           data: seriesData.ma5Data,
           symbol: "none",
           smooth: true,
-          lineStyle: {{ width: 2 }},
+          lineStyle: {{ width: 2, color: "#f6b04d" }},
         }},
         {{
           name: "MA20",
@@ -343,7 +359,7 @@ def _chart_runtime_script(container_id: str) -> str:
           data: seriesData.ma20Data,
           symbol: "none",
           smooth: true,
-          lineStyle: {{ width: 2 }},
+          lineStyle: {{ width: 2, color: "#4aa8ff" }},
         }},
         {{
           name: "成交量",
@@ -352,7 +368,7 @@ def _chart_runtime_script(container_id: str) -> str:
           yAxisIndex: 1,
           data: seriesData.volumeData,
           itemStyle: {{
-            color: "#94a3b8",
+            color: "rgba(151, 176, 203, 0.66)",
           }},
         }},
         {{
@@ -363,7 +379,7 @@ def _chart_runtime_script(container_id: str) -> str:
           data: seriesData.macdData,
           itemStyle: {{
             color: function(params) {{
-              return (params.data || 0) >= 0 ? "#ef4444" : "#22c55e";
+              return (params.data || 0) >= 0 ? "#ff6b57" : "#31c48d";
             }},
           }},
         }},
@@ -375,7 +391,7 @@ def _chart_runtime_script(container_id: str) -> str:
           data: seriesData.rsiData,
           symbol: "none",
           smooth: true,
-          lineStyle: {{ width: 2, color: "#0f766e" }},
+          lineStyle: {{ width: 2, color: "#88f0ff" }},
         }},
       ],
       graphic: [
@@ -385,7 +401,7 @@ def _chart_runtime_script(container_id: str) -> str:
           top: 14,
           style: {{
             text: indicatorStatus,
-            fill: runtimeState.indicators.provisional ? "#ea580c" : "#15803d",
+            fill: runtimeState.indicators.provisional ? "#f4b740" : "#31c48d",
             fontWeight: 700,
             fontSize: 12,
           }},
@@ -393,14 +409,13 @@ def _chart_runtime_script(container_id: str) -> str:
       ],
     }};
   }}
-
-  function setPanelText(root, selector, value) {{
-    const target = root.querySelector(selector);
-    if (!target) {{
-      return;
-    }}
-    target.textContent = value;
+function setPanelText(root, selector, value) {{
+  const target = root.querySelector(selector) || document.querySelector(selector);
+  if (!target) {{
+    return;
   }}
+  target.textContent = value;
+}}
 
   function formatIndicatorValue(value) {{
     const numeric = normalizeNumber(value);
@@ -653,6 +668,30 @@ def _chart_runtime_script(container_id: str) -> str:
     }};
   }}
 
+  function attachRootObserver(root) {{
+    if (root.__tradingassistantRuntimeObserver) {{
+      return;
+    }}
+    const observer = new MutationObserver((mutations) => {{
+      const shouldReboot = mutations.some((mutation) => mutation.type === "attributes");
+      if (shouldReboot) {{
+        boot();
+      }}
+    }});
+    observer.observe(root, {{
+      attributes: true,
+      attributeFilter: [
+        "data-bootstrap-url",
+        "data-chart-socket-url",
+        "data-api-base-url",
+        "data-symbol",
+        "data-period",
+        "data-indicators",
+      ],
+    }});
+    root.__tradingassistantRuntimeObserver = observer;
+  }}
+
   function boot() {{
     const root = document.getElementById(CONTAINER_ID);
     if (!root) {{
@@ -662,10 +701,14 @@ def _chart_runtime_script(container_id: str) -> str:
     if (!chartCanvas) {{
       return;
     }}
+    attachRootObserver(root);
     const contextKey = [
       root.getAttribute("data-symbol") || "",
       root.getAttribute("data-period") || "",
       root.getAttribute("data-indicators") || "[]",
+      root.getAttribute("data-bootstrap-url") || "",
+      root.getAttribute("data-chart-socket-url") || "",
+      root.getAttribute("data-api-base-url") || "",
     ].join("|");
     if (root.dataset.contextKey === contextKey && root.__tradingassistantRuntime) {{
       return;
@@ -674,6 +717,12 @@ def _chart_runtime_script(container_id: str) -> str:
     if (root.__tradingassistantRuntime && root.__tradingassistantRuntime.socket) {{
       try {{
         root.__tradingassistantRuntime.socket.close();
+      }} catch (_error) {{
+      }}
+    }}
+    if (root.__tradingassistantRuntime && root.__tradingassistantRuntime.chart) {{
+      try {{
+        root.__tradingassistantRuntime.chart.dispose();
       }} catch (_error) {{
       }}
     }}
@@ -696,6 +745,90 @@ def _chart_runtime_script(container_id: str) -> str:
 """
 
 
+def _chart_runtime_cleanup_script(container_id: str) -> str:
+    """生成图表运行时卸载时执行的清理脚本。"""
+
+    return f"""
+(function() {{
+  const root = document.getElementById({json.dumps(container_id, ensure_ascii=False)});
+  if (!root) {{
+    return;
+  }}
+  const observer = root.__tradingassistantRuntimeObserver;
+  if (observer && typeof observer.disconnect === "function") {{
+    observer.disconnect();
+  }}
+  root.__tradingassistantRuntimeObserver = null;
+  root.dataset.contextKey = "";
+  const runtimeState = root.__tradingassistantRuntime;
+  root.__tradingassistantRuntime = null;
+  if (!runtimeState) {{
+    return;
+  }}
+  if (runtimeState.socket) {{
+    try {{
+      runtimeState.socket.close();
+    }} catch (_error) {{
+    }}
+  }}
+  if (runtimeState.chart) {{
+    try {{
+      runtimeState.chart.dispose();
+    }} catch (_error) {{
+    }}
+  }}
+}})();
+"""
+
+
+class _ChartRuntimeHookHost(rx.Component):
+    """承载图表运行时 hook，并避免把运行时参数透传到 Fragment。"""
+
+    tag: ClassVar[str] = "Fragment"
+
+    container_id: Any
+    bootstrap_url: Any
+    chart_socket_url: Any
+    api_base_url: Any
+    symbol: Any
+    period: Any
+    indicators_json: Any
+
+    def _exclude_props(self) -> list[str]:
+        """排除仅供 hook 使用的 props，避免它们落入 Fragment 属性。"""
+
+        return [
+            "container_id",
+            "bootstrap_url",
+            "chart_socket_url",
+            "api_base_url",
+            "symbol",
+            "period",
+            "indicators_json",
+        ]
+
+    def add_imports(self) -> dict[str, str]:
+        """声明运行时 hook 所需的 React imports。"""
+
+        return {"react": "useEffect"}
+
+    def add_hooks(self) -> list[str]:
+        """注册挂载期运行时，并通过 DOM 属性监听上下文切换。"""
+
+        runtime_script = _chart_runtime_script(str(self.container_id))
+        cleanup_script = _chart_runtime_cleanup_script(str(self.container_id))
+        return [
+            f"""
+useEffect(() => {{
+{runtime_script}
+  return () => {{
+{cleanup_script}
+  }};
+}}, []);
+"""
+        ]
+
+
 def chart_canvas(
     *,
     container_id: str,
@@ -706,86 +839,176 @@ def chart_canvas(
     period: Any,
     indicators_json: Any,
 ) -> rx.Component:
-    """构造浏览器图表容器与运行时代码。"""
+    """构造浏览器侧图表容器，并在挂载后直接启动 runtime。"""
 
-    return rx.fragment(
+    chart_root = rx.box(
         rx.box(
+            rx.text(
+                "正在建立图表会话...",
+                size="2",
+                style={
+                    "color": TRADING_COLORS["text_soft"],
+                    "position": "absolute",
+                    "top": "0.85rem",
+                    "left": "1rem",
+                    "z_index": "2",
+                },
+                data_role="chart-message",
+            ),
             rx.box(
-                rx.text(
-                    "正在准备图表容器...",
-                    size="2",
-                    color_scheme="gray",
-                    data_role="chart-message",
-                ),
-                rx.box(
-                    width="100%",
-                    height="100%",
-                    data_role="chart-canvas",
-                ),
-                position="relative",
                 width="100%",
                 height="100%",
+                data_role="chart-canvas",
             ),
-            id=container_id,
-            data_bootstrap_url=bootstrap_url,
-            data_chart_socket_url=chart_socket_url,
-            data_api_base_url=api_base_url,
-            data_symbol=symbol,
-            data_period=period,
-            data_indicators=indicators_json,
-            data_status="idle",
+            position="relative",
             width="100%",
             height="100%",
         ),
-        rx.script(_chart_runtime_script(container_id)),
+        id=container_id,
+        data_bootstrap_url=bootstrap_url,
+        data_chart_socket_url=chart_socket_url,
+        data_api_base_url=api_base_url,
+        data_symbol=symbol,
+        data_period=period,
+        data_indicators=indicators_json,
+        data_chart_engine="ECharts",
+        data_status="idle",
+        width="100%",
+        height="100%",
+        border_radius="18px",
+        overflow="hidden",
+        background="linear-gradient(180deg, rgba(6, 10, 16, 0.94) 0%, rgba(10, 15, 24, 0.98) 100%)",
+        border=f"1px solid {TRADING_COLORS['border']}",
+    )
+    return _ChartRuntimeHookHost.create(
+        chart_root,
+        container_id=container_id,
+        bootstrap_url=bootstrap_url,
+        chart_socket_url=chart_socket_url,
+        api_base_url=api_base_url,
+        symbol=symbol,
+        period=period,
+        indicators_json=indicators_json,
     )
 
 
 def indicator_summary_card() -> rx.Component:
-    """构造图表页右侧指标状态面板。"""
+    """构造右侧摘要栏，集中展示图表状态与关键指标。"""
 
     return rx.card(
         rx.vstack(
-            rx.heading("指标面板", size="4"),
-            rx.text("指标状态: --", data_role="indicator-status", size="2"),
-            rx.text("当前K线: --", data_role="bar-status", size="2"),
-            rx.divider(),
-            rx.hstack(
-                rx.text("MA5", weight="bold"),
-                rx.spacer(),
-                rx.code("--", data_role="indicator-ma5"),
+            rx.vstack(
+                rx.text(
+                    "Summary Rail",
+                    size="1",
+                    weight="bold",
+                    style={
+                        "color": TRADING_COLORS["text_muted"],
+                        "letter_spacing": "0.08em",
+                        "text_transform": "uppercase",
+                    },
+                ),
+                rx.heading("状态摘要", size="5"),
+                rx.text(
+                    "把 forming/closed bar 与 provisional/finalized 指标收束到右侧摘要栏。",
+                    size="2",
+                    style={"color": TRADING_COLORS["text_soft"]},
+                ),
+                spacing="1",
+                align="start",
+            ),
+            rx.box(
+                rx.hstack(
+                    rx.text("指标稳定度", style={"color": TRADING_COLORS["text_soft"]}),
+                    rx.spacer(),
+                    rx.code(
+                        "--",
+                        data_role="indicator-status",
+                        style={
+                            "background": "rgba(246, 139, 44, 0.12)",
+                            "color": TRADING_COLORS["accent"],
+                        },
+                    ),
+                    width="100%",
+                ),
+                style=metric_row_style(),
+            ),
+            rx.box(
+                rx.hstack(
+                    rx.text("当前 K 线", style={"color": TRADING_COLORS["text_soft"]}),
+                    rx.spacer(),
+                    rx.code(
+                        "--",
+                        data_role="bar-status",
+                        style={
+                            "background": "rgba(73, 167, 255, 0.12)",
+                            "color": TRADING_COLORS["info"],
+                        },
+                    ),
+                    width="100%",
+                ),
+                style=metric_row_style(),
+            ),
+            rx.grid(
+                rx.box(
+                    rx.vstack(
+                        rx.text("MA5", size="1", style={"color": TRADING_COLORS["text_muted"]}),
+                        rx.code("--", data_role="indicator-ma5"),
+                        spacing="1",
+                        align="start",
+                    ),
+                    style=metric_row_style(),
+                ),
+                rx.box(
+                    rx.vstack(
+                        rx.text("MA20", size="1", style={"color": TRADING_COLORS["text_muted"]}),
+                        rx.code("--", data_role="indicator-ma20"),
+                        spacing="1",
+                        align="start",
+                    ),
+                    style=metric_row_style(),
+                ),
+                rx.box(
+                    rx.vstack(
+                        rx.text("MACD", size="1", style={"color": TRADING_COLORS["text_muted"]}),
+                        rx.code("--", data_role="indicator-macd"),
+                        spacing="1",
+                        align="start",
+                    ),
+                    style=metric_row_style(),
+                ),
+                rx.box(
+                    rx.vstack(
+                        rx.text("RSI14", size="1", style={"color": TRADING_COLORS["text_muted"]}),
+                        rx.code("--", data_role="indicator-rsi"),
+                        spacing="1",
+                        align="start",
+                    ),
+                    style=metric_row_style(),
+                ),
+                columns=rx.breakpoints(initial="2"),
+                spacing="3",
                 width="100%",
             ),
-            rx.hstack(
-                rx.text("MA20", weight="bold"),
-                rx.spacer(),
-                rx.code("--", data_role="indicator-ma20"),
-                width="100%",
+            rx.box(
+                rx.vstack(
+                    rx.text("Bootstrap 摘要", size="1", style={"color": TRADING_COLORS["text_muted"]}),
+                    rx.text("bars: --", data_role="bootstrap-summary", size="2"),
+                    rx.text("流状态: --", data_role="stream-status", size="2"),
+                    spacing="1",
+                    align="start",
+                ),
+                style=metric_row_style(),
             ),
-            rx.hstack(
-                rx.text("MACD", weight="bold"),
-                rx.spacer(),
-                rx.code("--", data_role="indicator-macd"),
-                width="100%",
-            ),
-            rx.hstack(
-                rx.text("RSI14", weight="bold"),
-                rx.spacer(),
-                rx.code("--", data_role="indicator-rsi"),
-                width="100%",
-            ),
-            rx.divider(),
-            rx.text("bars: --", data_role="bootstrap-summary", size="2"),
-            rx.text("通道状态: --", data_role="stream-status", size="2"),
             spacing="3",
             align="stretch",
         ),
         size="3",
         width="100%",
         height="100%",
+        data_role="summary-rail",
+        style=summary_panel_style(),
     )
-
-
 def example_bootstrap_payload() -> ChartBootstrapPayload:
     """返回用于测试与文档的示例 bootstrap 契约。"""
 

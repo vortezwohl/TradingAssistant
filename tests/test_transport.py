@@ -102,6 +102,19 @@ class TransportAppTests(unittest.TestCase):
         self.assertEqual(payload["period"], "1m")
         self.assertEqual(len(payload["bars"]), 3)
 
+    def test_bootstrap_endpoint_allows_frontend_origin(self) -> None:
+        """bootstrap REST 应允许 Reflex 前端跨域访问。"""
+
+        response = self.client.get(
+            "/api/chart/bootstrap",
+            params={"region": "HK", "code": "00700", "period": "1m", "bars": 3},
+            headers={"Origin": "http://127.0.0.1:3000"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.headers.get("access-control-allow-origin"),
+            "http://127.0.0.1:3000",
+        )
     def test_runtime_metrics_endpoint_returns_observability_snapshot(self) -> None:
         """运行态指标接口应暴露最小观测信息。"""
 

@@ -16,6 +16,7 @@ from time import perf_counter
 from typing import Any
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi.middleware.cors import CORSMiddleware
 
 from tradingassistant.charting.history import HistoryBackfillService
 from tradingassistant.charting.keys import (
@@ -212,6 +213,16 @@ def create_app(
     """创建 FastAPI 应用。"""
 
     app = FastAPI(title="TradingAssistant")
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=[
+            "http://127.0.0.1:3000",
+            "http://localhost:3000",
+        ],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
     connections: dict[str, SessionConnection] = {}
 
     @app.get("/api/chart/bootstrap")

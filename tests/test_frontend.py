@@ -57,7 +57,7 @@ class WatchPageStateTests(unittest.TestCase):
         """页面状态应提供切换图表上下文所需字段。"""
 
         fields = WatchPageState.get_fields()
-        self.assertEqual(fields["api_base_url"].default, "http://127.0.0.1:8000")
+        self.assertEqual(fields["api_base_url"].default, "http://127.0.0.1:8001")
         self.assertIn("HK.00700", fields["watchlist"].default_factory())
         self.assertIn("1m", fields["available_periods"].default_factory())
         self.assertIn("ma5", fields["indicator_candidates"].default_factory())
@@ -103,6 +103,11 @@ class WatchPageRenderingTests(unittest.TestCase):
         self.assertIn("watch-chart-root", rendered)
         self.assertIn("ECharts", rendered)
         self.assertIn("data-bootstrap-url", rendered)
+        self.assertIn("command-bar", rendered)
+        self.assertIn("chart-workspace", rendered)
+        self.assertIn("summary-rail", rendered)
+        self.assertIn("workspace-controls", rendered)
+        self.assertIn("workspace-diagnostics", rendered)
         self.assertIn("indicator-status", rendered)
         self.assertIn("RadixThemesSelect.Root", rendered)
         self.assertIn("RadixThemesCheckbox", rendered)
