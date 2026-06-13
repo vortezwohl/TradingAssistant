@@ -238,6 +238,7 @@ def _chart_workspace() -> rx.Component:
                     period=WatchPageState.period,
                     indicators_json=WatchPageState.indicator_selection_json,
                 ),
+                height=rx.breakpoints(initial="560px", xl="760px"),
                 min_height=rx.breakpoints(initial="560px", xl="760px"),
                 width="100%",
             ),
