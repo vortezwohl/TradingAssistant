@@ -1,4 +1,4 @@
-"""???????? Reflex State ??????"""
+"Reflex State class for trading page state management and interactions."
 
 from __future__ import annotations
 
@@ -23,7 +23,7 @@ class WatchPageState(rx.State):
     hover_index: int = -1
 
     def _reset_hover(self) -> None:
-        """???????????????"""
+        """Reset the chart hover index to deactivate the hover panel."""
         self.hover_index = -1
 
     @rx.var

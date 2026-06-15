@@ -1,4 +1,4 @@
-"""?? Reflex ??????????????"""
+"Reflex page assembly composing the full trading dashboard UI."
 
 from __future__ import annotations
 
@@ -1629,7 +1629,7 @@ def _right_column() -> rx.Component:
 
 
 def index() -> rx.Component:
-    """???????????????"""
+    """Return the full trading terminal page layout."""
     return rx.box(
         _top_bar(),
         rx.box(
