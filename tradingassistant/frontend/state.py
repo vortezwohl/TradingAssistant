@@ -1,4 +1,4 @@
-"""State and event wiring for the native terminal workspace."""
+"""???????? Reflex State ??????"""
 
 from __future__ import annotations
 
@@ -23,8 +23,7 @@ class WatchPageState(rx.State):
     hover_index: int = -1
 
     def _reset_hover(self) -> None:
-        """Clear transient chart hover state when the chart context changes."""
-
+        """???????????????"""
         self.hover_index = -1
 
     @rx.var

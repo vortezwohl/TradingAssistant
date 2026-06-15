@@ -1,21 +1,23 @@
-"""实现 FastAPI 传输门面与会话级推送编排。
+﻿"""实现 FastAPI 传输门面与会话级推送编排。
 
 该模块负责：
 1. 暴露图表 bootstrap REST 接口；
-2. 暴露图表、列表行情与告警 WebSocket 推送通道；
-3. 通过 TopicBus 与 SubscriptionRegistry 协调会话订阅、退订和连接清理；
-4. 把高频运行态数据隔离在传输与服务层，不直接压入 Reflex State。
+2. 通过 TopicBus 与 SubscriptionRegistry 编排 WebSocket 路由；
+3. 把高频运行态数据隔离在传输与服务层，不直接压入 Reflex State。
+
+WebSocket 路由实现已提取到独立模块：
+- `ws_chart.py` — 图表增量推送
+- `ws_quote.py` — 列表行情推送
+- `ws_alert.py` — 告警事件推送
+- `ws_helpers.py` — 公共订阅生命周期工具
 """
 
 from __future__ import annotations
 
-import asyncio
-import json
-from dataclasses import dataclass, field
 from time import perf_counter
 from typing import Any
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 
 from tradingassistant.charting.history import HistoryBackfillService
@@ -28,19 +30,15 @@ from tradingassistant.charting.keys import (
 from tradingassistant.charting.models import ChartSnapshot, RuntimeBar
 from tradingassistant.diagnostics import RuntimeMetrics
 from tradingassistant.events import KlineEvent, QuoteEvent
+from tradingassistant.indicators.engine import IncrementalIndicatorEngine
 from tradingassistant.infrastructure.cache import CacheStore
 from tradingassistant.infrastructure.subscription_registry import SubscriptionRegistry
-from tradingassistant.infrastructure.topic_bus import SubscriptionHandle, TopicBus
-from tradingassistant.indicators.engine import IncrementalIndicatorEngine
+from tradingassistant.infrastructure.topic_bus import TopicBus
 
-
-@dataclass(slots=True)
-class SessionConnection:
-    """记录单个 WebSocket 会话的连接与订阅句柄。"""
-
-    session_id: str
-    websocket: WebSocket
-    handles: dict[str, SubscriptionHandle] = field(default_factory=dict)
+from .ws_alert import handle_alert_stream
+from .ws_chart import handle_chart_stream
+from .ws_helpers import SessionConnection
+from .ws_quote import handle_quote_stream
 
 
 class MarketMonitorService:
@@ -148,16 +146,21 @@ class MarketMonitorService:
         }
         return self._publish(payload["topic"], payload)
 
-    def publish_quote_update(self, event: QuoteEvent) -> int:
-        """发布列表行情更新。"""
+    def publish_quote_update(self, *, event: QuoteEvent) -> int:
+        """发布列表行情增量更新。"""
 
         payload = {
             "topic": quotes_topic(),
             "payload_type": "quote_update",
             "symbol": event.symbol,
             "last_price": event.last_price,
+            "open_price": event.open_price,
+            "high_price": event.high_price,
+            "low_price": event.low_price,
+            "prev_close": event.prev_close,
             "volume": event.volume,
             "turnover": event.turnover,
+            "event_time": event.event_time.isoformat(),
         }
         return self._publish(payload["topic"], payload)
 
@@ -167,34 +170,32 @@ class MarketMonitorService:
         symbol: str,
         alert_type: str,
         message: str,
-        level: str = "info",
-        topic_name: str = "default",
-        metadata: dict[str, Any] | None = None,
+        severity: str = "info",
+        name: str = "default",
     ) -> int:
         """发布告警事件。"""
 
         payload = {
-            "topic": alerts_topic(topic_name),
-            "payload_type": "alert_event",
+            "topic": alerts_topic(name),
+            "payload_type": "alert",
             "symbol": symbol,
             "alert_type": alert_type,
             "message": message,
-            "level": level,
-            "metadata": metadata or {},
+            "severity": severity,
         }
         return self._publish(payload["topic"], payload)
 
     def runtime_snapshot(self) -> dict[str, Any]:
-        """返回当前运行态观测快照。"""
+        """返回当前运行态快照。"""
 
         return self.metrics.snapshot()
 
     def _publish(self, topic: str, payload: dict[str, Any]) -> int:
-        """发布消息并记录最小可观测性指标。"""
+        """向主题总线发布并记录指标。"""
 
-        started_at = perf_counter()
+        start = perf_counter()
         subscriber_count = self.topic_bus.publish(topic, payload)
-        latency_ms = (perf_counter() - started_at) * 1000
+        latency_ms = (perf_counter() - start) * 1000
         self.metrics.record_publish(
             topic,
             payload,
@@ -210,7 +211,19 @@ def create_app(
     topic_bus: TopicBus,
     registry: SubscriptionRegistry,
 ) -> FastAPI:
-    """创建 FastAPI 应用。"""
+    """创建 FastAPI 应用，挂载 REST 和 WebSocket 路由。
+
+    WebSocket 路由实现已提取到独立模块（ws_chart/ws_quote/ws_alert.py），
+    本函数仅负责装配 app 实例、注册 CORS 和挂载端点。
+
+    Args:
+        service: 行情监控服务。
+        topic_bus: 主题总线。
+        registry: 订阅注册表。
+
+    Returns:
+        已完成路由挂载的 FastAPI 应用。
+    """
 
     app = FastAPI(title="TradingAssistant")
     app.add_middleware(
@@ -233,7 +246,6 @@ def create_app(
         bars: int = 240,
     ) -> dict[str, Any]:
         """返回图表 bootstrap 快照。"""
-
         return service.bootstrap_chart(
             region=region,
             code=code,
@@ -244,196 +256,42 @@ def create_app(
     @app.get("/api/runtime/metrics")
     async def runtime_metrics() -> dict[str, Any]:
         """返回 MEMORY 路线的最小运行态指标。"""
-
         return service.runtime_snapshot()
 
     @app.websocket("/ws/chart/{session_id}")
     async def chart_stream(websocket: WebSocket, session_id: str) -> None:
         """建立图表增量推送连接。"""
-
-        await websocket.accept()
-        loop = asyncio.get_running_loop()
-        connection = SessionConnection(session_id=session_id, websocket=websocket)
-        connections[session_id] = connection
-        try:
-            while True:
-                raw = await websocket.receive_text()
-                payload = json.loads(raw)
-                action = payload.get("action", "subscribe")
-                symbol = payload["symbol"]
-                period = payload.get("period", "1m")
-                topic = chart_topic(symbol, period)
-                if action == "unsubscribe":
-                    _unsubscribe_topic(session_id, topic, connections, registry, topic_bus, service)
-                    await websocket.send_json(_subscription_ack(action, topic))
-                    continue
-                _subscribe_topic(
-                    session_id=session_id,
-                    topic=topic,
-                    loop=loop,
-                    websocket=websocket,
-                    connections=connections,
-                    registry=registry,
-                    topic_bus=topic_bus,
-                    service=service,
-                )
-                await websocket.send_json(_subscription_ack(action, topic))
-        except WebSocketDisconnect:
-            _cleanup_connection(session_id, connections, registry, topic_bus, service)
+        await handle_chart_stream(
+            websocket=websocket,
+            session_id=session_id,
+            connections=connections,
+            registry=registry,
+            topic_bus=topic_bus,
+            service=service,
+        )
 
     @app.websocket("/ws/quotes/{session_id}")
     async def quote_stream(websocket: WebSocket, session_id: str) -> None:
         """建立列表行情推送连接。"""
-
-        await websocket.accept()
-        loop = asyncio.get_running_loop()
-        connection = SessionConnection(session_id=session_id, websocket=websocket)
-        connections[session_id] = connection
-        try:
-            while True:
-                raw = await websocket.receive_text()
-                payload = json.loads(raw) if raw.strip().startswith("{") else {"action": "subscribe"}
-                action = payload.get("action", "subscribe")
-                topic = quotes_topic(payload.get("name", "watchlist"))
-                if action == "unsubscribe":
-                    _unsubscribe_topic(session_id, topic, connections, registry, topic_bus, service)
-                    await websocket.send_json(_subscription_ack(action, topic))
-                    continue
-                _subscribe_topic(
-                    session_id=session_id,
-                    topic=topic,
-                    loop=loop,
-                    websocket=websocket,
-                    connections=connections,
-                    registry=registry,
-                    topic_bus=topic_bus,
-                    service=service,
-                )
-                await websocket.send_json(_subscription_ack(action, topic))
-        except WebSocketDisconnect:
-            _cleanup_connection(session_id, connections, registry, topic_bus, service)
+        await handle_quote_stream(
+            websocket=websocket,
+            session_id=session_id,
+            connections=connections,
+            registry=registry,
+            topic_bus=topic_bus,
+            service=service,
+        )
 
     @app.websocket("/ws/alerts/{session_id}")
     async def alert_stream(websocket: WebSocket, session_id: str) -> None:
         """建立告警事件推送连接。"""
-
-        await websocket.accept()
-        loop = asyncio.get_running_loop()
-        connection = SessionConnection(session_id=session_id, websocket=websocket)
-        connections[session_id] = connection
-        try:
-            while True:
-                raw = await websocket.receive_text()
-                payload = json.loads(raw) if raw.strip().startswith("{") else {"action": "subscribe"}
-                action = payload.get("action", "subscribe")
-                topic = alerts_topic(payload.get("name", "default"))
-                if action == "unsubscribe":
-                    _unsubscribe_topic(session_id, topic, connections, registry, topic_bus, service)
-                    await websocket.send_json(_subscription_ack(action, topic))
-                    continue
-                _subscribe_topic(
-                    session_id=session_id,
-                    topic=topic,
-                    loop=loop,
-                    websocket=websocket,
-                    connections=connections,
-                    registry=registry,
-                    topic_bus=topic_bus,
-                    service=service,
-                )
-                await websocket.send_json(_subscription_ack(action, topic))
-        except WebSocketDisconnect:
-            _cleanup_connection(session_id, connections, registry, topic_bus, service)
-
-    return app
-
-
-def _subscribe_topic(
-    *,
-    session_id: str,
-    topic: str,
-    loop: asyncio.AbstractEventLoop,
-    websocket: WebSocket,
-    connections: dict[str, SessionConnection],
-    registry: SubscriptionRegistry,
-    topic_bus: TopicBus,
-    service: MarketMonitorService,
-) -> None:
-    """统一处理会话订阅。"""
-
-    connection = connections[session_id]
-    if topic in connection.handles:
-        return
-    registry.register(session_id, topic)
-    handle = topic_bus.subscribe(
-        topic,
-        f"{session_id}:{topic}",
-        _make_sender_callback(loop, websocket),
-    )
-    connection.handles[topic] = handle
-    service.metrics.update_topic_subscribers(topic, registry.topic_subscriber_count(topic))
-
-
-def _unsubscribe_topic(
-    session_id: str,
-    topic: str,
-    connections: dict[str, SessionConnection],
-    registry: SubscriptionRegistry,
-    topic_bus: TopicBus,
-    service: MarketMonitorService,
-) -> None:
-    """统一处理会话退订与空主题回收。"""
-
-    connection = connections.get(session_id)
-    if connection is None:
-        return
-    handle = connection.handles.pop(topic, None)
-    if handle is not None:
-        topic_bus.unsubscribe(handle)
-    registry.unregister(session_id, topic)
-    service.metrics.update_topic_subscribers(topic, registry.topic_subscriber_count(topic))
-
-
-def _make_sender_callback(
-    loop: asyncio.AbstractEventLoop,
-    websocket: WebSocket,
-):
-    """为指定连接创建线程安全的消息发送回调。"""
-
-    def sender(_topic: str, payload: Any) -> None:
-        """把同步广播事件调度到连接所在事件循环中。"""
-
-        loop.call_soon_threadsafe(
-            asyncio.create_task,
-            websocket.send_json(payload),
+        await handle_alert_stream(
+            websocket=websocket,
+            session_id=session_id,
+            connections=connections,
+            registry=registry,
+            topic_bus=topic_bus,
+            service=service,
         )
 
-    return sender
-
-
-def _subscription_ack(action: str, topic: str) -> dict[str, str]:
-    """构造订阅生命周期确认消息。"""
-
-    return {
-        "payload_type": "subscription_ack",
-        "action": action,
-        "topic": topic,
-    }
-
-
-def _cleanup_connection(
-    session_id: str,
-    connections: dict[str, SessionConnection],
-    registry: SubscriptionRegistry,
-    topic_bus: TopicBus,
-    service: MarketMonitorService,
-) -> None:
-    """统一清理连接、主题订阅与运行态计数。"""
-
-    topics = registry.unregister_all(session_id)
-    connection = connections.pop(session_id, None)
-    if connection is not None:
-        for handle in connection.handles.values():
-            topic_bus.unsubscribe(handle)
-    for topic in topics:
-        service.metrics.update_topic_subscribers(topic, registry.topic_subscriber_count(topic))
+    return app

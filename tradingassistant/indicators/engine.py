@@ -29,7 +29,6 @@ def safe_float(value: Any) -> float | None:
     Returns:
         浮点数；若为空或 NaN 则返回 `None`。
     """
-
     if value is None:
         return None
     try:
@@ -43,7 +42,6 @@ def safe_float(value: Any) -> float | None:
 
 def bars_to_frame(bars: list[RuntimeBar]) -> pd.DataFrame:
     """把运行态 K 线列表转换为 DataFrame。"""
-
     return pd.DataFrame(
         [
             {
@@ -69,7 +67,6 @@ class IndicatorSnapshot:
 
     def to_dict(self) -> dict[str, Any]:
         """返回可序列化结构。"""
-
         return {
             "values": self.values,
             "provisional": self.provisional,
@@ -85,21 +82,18 @@ class RollingWindow:
 
     def append(self, value: float) -> None:
         """追加值并保持固定窗口长度。"""
-
         self.values.append(value)
         while len(self.values) > self.size:
             self.values.popleft()
 
     def mean(self) -> float | None:
         """返回窗口均值。"""
-
         if not self.values:
             return None
         return sum(self.values) / len(self.values)
 
     def std(self) -> float | None:
         """返回窗口标准差。"""
-
         if not self.values:
             return None
         mean_value = self.mean()
@@ -109,7 +103,6 @@ class RollingWindow:
 
     def as_list(self) -> list[float]:
         """返回窗口列表副本。"""
-
         return list(self.values)
 
 
@@ -134,7 +127,6 @@ class IncrementalIndicatorEngine:
 
     def __init__(self) -> None:
         """初始化指标状态映射。"""
-
         self._states: dict[str, IndicatorState] = {}
 
     def initialize(self, key: str, bars: list[RuntimeBar]) -> IndicatorSnapshot:
@@ -147,7 +139,6 @@ class IncrementalIndicatorEngine:
         Returns:
             初始化后的指标快照。
         """
-
         frame = bars_to_frame(bars)
         enriched = enrich_history_frame(frame, "basic") if not frame.empty else frame
         state = IndicatorState(bars=list(bars))
@@ -195,16 +186,12 @@ class IncrementalIndicatorEngine:
         Returns:
             增量更新后的指标快照。
         """
-
         state = self._states.setdefault(key, IndicatorState())
         bars = list(state.bars)
-        if provisional and bars and bars[-1].bar_time == bar.bar_time:
+        if bars and bars[-1].bar_time == bar.bar_time:
             bars[-1] = bar
         else:
-            if bars and bars[-1].bar_time == bar.bar_time:
-                bars[-1] = bar
-            else:
-                bars.append(bar)
+            bars.append(bar)
         state.bars = bars[-500:]
         self._rebuild_state_from_bars(state)
         snapshot = IndicatorSnapshot(
@@ -225,7 +212,6 @@ class IncrementalIndicatorEngine:
         Returns:
             每个可比较指标的绝对误差。
         """
-
         frame = bars_to_frame(bars)
         if frame.empty:
             return {}
@@ -254,7 +240,6 @@ class IncrementalIndicatorEngine:
 
     def latest(self, key: str) -> IndicatorSnapshot | None:
         """返回最新快照。"""
-
         state = self._states.get(key)
         return None if state is None else state.latest_snapshot
 
@@ -264,7 +249,6 @@ class IncrementalIndicatorEngine:
         当前阶段优先保证正确性，直接基于有限窗口重建；
         这样既能避免全量历史重算，也能保持实现稳定。
         """
-
         state.ma5_window = RollingWindow(size=5)
         state.ma20_window = RollingWindow(size=20)
         state.boll_window = RollingWindow(size=20)
@@ -272,7 +256,7 @@ class IncrementalIndicatorEngine:
         state.ema26 = None
         state.dea9 = None
         closes = [bar.close_price for bar in state.bars if bar.close_price is not None]
-        for index, close_price in enumerate(closes):
+        for _index, close_price in enumerate(closes):
             assert close_price is not None
             state.ma5_window.append(close_price)
             state.ma20_window.append(close_price)
@@ -288,7 +272,6 @@ class IncrementalIndicatorEngine:
 
     def _rebuild_rsi_state(self, state: IndicatorState) -> None:
         """重建 RSI 所需的平均涨跌幅状态。"""
-
         closes = [bar.close_price for bar in state.bars if bar.close_price is not None]
         if len(closes) < 2:
             state.avg_gain = None
@@ -296,7 +279,7 @@ class IncrementalIndicatorEngine:
             return
         gains: list[float] = []
         losses: list[float] = []
-        for prev_close, current_close in zip(closes, closes[1:]):
+        for prev_close, current_close in zip(closes, closes[1:], strict=True):
             change = current_close - prev_close
             gains.append(max(change, 0.0))
             losses.append(abs(min(change, 0.0)))
@@ -312,7 +295,6 @@ class IncrementalIndicatorEngine:
 
     def _build_snapshot_values(self, state: IndicatorState) -> dict[str, float | None]:
         """基于当前状态构造快照值。"""
-
         dif = None
         histogram = None
         if state.ema12 is not None and state.ema26 is not None:
@@ -349,7 +331,6 @@ class IncrementalIndicatorEngine:
 
     def _ema_next(self, previous: float | None, value: float, period: int) -> float:
         """计算下一步 EMA。"""
-
         alpha = 2 / (period + 1)
         if previous is None:
             return value

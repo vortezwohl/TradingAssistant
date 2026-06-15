@@ -45,7 +45,6 @@ class HistoryBackfillService:
         Returns:
             标准化后的历史 K 线列表。
         """
-
         cache_key = bar_history_key(f"{region.upper()}.{code}", period, limit)
         cached = self.cache_store.get(cache_key)
         if cached is not None:

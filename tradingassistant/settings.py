@@ -7,7 +7,6 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-
 PACKAGE_ROOT = Path(__file__).resolve().parent
 PROJECT_ROOT = PACKAGE_ROOT.parent
 ENV_FILE = PROJECT_ROOT / ".env"
@@ -25,7 +24,6 @@ def _get_env_str(name: str, default: str) -> str:
     Returns:
         去除首尾空白后的配置值。
     """
-
     value = os.getenv(name)
     if value is None:
         return default
@@ -46,7 +44,6 @@ def _get_env_int(name: str, default: int) -> int:
     Raises:
         ValueError: 当环境变量不是合法整数时抛出。
     """
-
     value = os.getenv(name)
     if value is None:
         return default
@@ -69,7 +66,6 @@ def _build_http_url(host: str, port: int) -> str:
     Returns:
         去除尾部斜杠的 URL。
     """
-
     return f"http://{host}:{port}".rstrip("/")
 
 

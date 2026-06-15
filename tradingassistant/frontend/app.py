@@ -1,5 +1,5 @@
 
-"""Native Reflex terminal workspace for the redesigned C-end market page."""
+"""?? Reflex ??????????????"""
 
 from __future__ import annotations
 
@@ -95,7 +95,6 @@ def _top_bar() -> rx.Component:
         ),
         style=terminal_bar_style(),
     )
-
 
 
 def _watchlist_row(row: dict[str, rx.Var[str] | str | bool]) -> rx.Component:
@@ -484,7 +483,6 @@ def _center_column() -> rx.Component:
     )
 
 
-
 def _depth_panel() -> rx.Component:
     return rx.box(
         rx.box(
@@ -650,7 +648,6 @@ def _depth_panel() -> rx.Component:
     )
 
 
-
 def _order_book_panel() -> rx.Component:
     return rx.box(
         rx.box(
@@ -763,6 +760,8 @@ def _analysis_tab_panel() -> rx.Component:
         ),
         style=scroll_region_style(),
     )
+
+
 def _tape_tab_panel() -> rx.Component:
     return rx.box(
         rx.foreach(
@@ -784,7 +783,6 @@ def _tape_tab_panel() -> rx.Component:
     )
 
 
-
 def _signal_tab_panel() -> rx.Component:
     return rx.box(
         rx.foreach(
@@ -799,7 +797,6 @@ def _signal_tab_panel() -> rx.Component:
         ),
         style=scroll_region_style(),
     )
-
 
 
 def _news_tab_panel() -> rx.Component:
@@ -818,7 +815,6 @@ def _news_tab_panel() -> rx.Component:
     )
 
 
-
 def _rail_panel() -> rx.Component:
     return rx.cond(
         WatchPageState.rail_tab == "analysis",
@@ -833,7 +829,6 @@ def _rail_panel() -> rx.Component:
             ),
         ),
     )
-
 
 
 def _right_column() -> rx.Component:
@@ -859,10 +854,8 @@ def _right_column() -> rx.Component:
     )
 
 
-
 def index() -> rx.Component:
-    """Render the native three-column terminal workspace."""
-
+    """???????????????"""
     return rx.box(
         _top_bar(),
         rx.box(_left_column(), _center_column(), _right_column(), style=workspace_style()),

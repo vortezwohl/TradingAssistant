@@ -6,7 +6,6 @@ import reflex as rx
 
 from tradingassistant.settings import FRONTEND_PORT, REFLEX_API_URL, REFLEX_BACKEND_PORT
 
-
 config = rx.Config(
     app_name="tradingassistant",
     app_module_import="tradingassistant.frontend.app",

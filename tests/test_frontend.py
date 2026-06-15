@@ -21,7 +21,6 @@ class WatchPageStateTests(unittest.TestCase):
 
     def test_state_fields_match_terminal_controls(self) -> None:
         """The page state should expose the expected terminal defaults."""
-
         fields = WatchPageState.get_fields()
         self.assertEqual(fields["ticker_input"].default, "")
         self.assertEqual(fields["active_code"].default, "HK.00700")
@@ -39,7 +38,6 @@ class WatchPageStateTests(unittest.TestCase):
 
     def test_state_exposes_terminal_derived_vars(self) -> None:
         """The page state should expose all chart and hover derived vars."""
-
         vars_set = set(WatchPageState.vars)
         for name in [
             "active_model",
@@ -72,7 +70,6 @@ class WatchPageStateTests(unittest.TestCase):
 
     def test_state_exposes_terminal_event_handlers(self) -> None:
         """The page state should expose all terminal interaction handlers."""
-
         handlers = WatchPageState.event_handlers
         for name in [
             "set_ticker_input",
@@ -96,8 +93,6 @@ class ThemeContractTests(unittest.TestCase):
 
     def test_shell_and_workspace_disable_page_scroll(self) -> None:
         """The shell should keep global page scrolling disabled."""
-
-
         shell = shell_style()
         workspace = workspace_style()
         scroll_region = scroll_region_style()
@@ -111,7 +106,6 @@ class ThemeContractTests(unittest.TestCase):
 
     def test_dense_terminal_styles_preserve_truncation_contract(self) -> None:
         """Dense side-rail text and hover surfaces should use stable overflow rules."""
-
         shell = shell_style()
         truncated = truncated_text_style()
         hover_panel = hover_panel_style()
@@ -130,7 +124,6 @@ class ChartingContractTests(unittest.TestCase):
 
     def test_scale_and_route_options_cover_terminal_contract(self) -> None:
         """The terminal options should still expose the expected scales and routes."""
-
         self.assertEqual(
             charting.SCALE_OPTIONS,
             ("30S", "1M", "5M", "15M", "1H", "4H", "1D", "1W", "1MO", "1Y"),
@@ -152,7 +145,6 @@ class ChartingContractTests(unittest.TestCase):
 
     def test_charting_helpers_cover_hover_contract_and_microstructure(self) -> None:
         """The chart builders should expose hover-ready metadata and route studies."""
-
         model = charting.build_market_model("US.NVDA", "1D")
         legend = charting.build_chart_legend(model, ["MA", "EMA", "BOLL", "VWAP"], 5)
         labels = [item["label"] for item in legend]
@@ -209,7 +201,6 @@ class TerminalRenderingTests(unittest.TestCase):
 
     def test_index_contains_terminal_workspace_structure(self) -> None:
         """The page render should include the updated terminal workspace building blocks."""
-
         rendered = str(index())
         for token in [
             "TradingAssistant / Terminal",

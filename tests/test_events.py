@@ -25,7 +25,6 @@ class MarketEventTests(unittest.TestCase):
 
     def test_tick_event_sets_tick_type(self) -> None:
         """TickEvent 应固定为 tick 类型。"""
-
         event = TickEvent(
             event_type=MarketEventType.CONNECTION,
             symbol="HK.00700",
@@ -38,7 +37,6 @@ class MarketEventTests(unittest.TestCase):
 
     def test_quote_event_sets_quote_type(self) -> None:
         """QuoteEvent 应固定为 quote 类型。"""
-
         event = QuoteEvent(
             event_type=MarketEventType.TICK,
             symbol="US.AAPL",
@@ -49,7 +47,6 @@ class MarketEventTests(unittest.TestCase):
 
     def test_kline_event_defaults_to_provisional(self) -> None:
         """KlineEvent 默认应标记为 provisional。"""
-
         event = KlineEvent(
             event_type=MarketEventType.TICK,
             symbol="HK.00700",
@@ -61,7 +58,6 @@ class MarketEventTests(unittest.TestCase):
 
     def test_depth_event_sets_depth_type(self) -> None:
         """DepthEvent 应固定为 depth 类型。"""
-
         event = DepthEvent(
             event_type=MarketEventType.QUOTE,
             symbol="HK.00700",
@@ -71,7 +67,6 @@ class MarketEventTests(unittest.TestCase):
 
     def test_connection_event_sets_connection_type(self) -> None:
         """ConnectionEvent 应固定为 connection 类型。"""
-
         event = ConnectionEvent(
             event_type=MarketEventType.QUOTE,
             symbol="system",

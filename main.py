@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import contextlib
 import os
 import subprocess
 import sys
 import time
 from pathlib import Path
 
+from tradingassistant.runtime import create_default_app
 from tradingassistant.settings import (
     API_BASE_URL,
     APP_BACKEND_HOST,
@@ -15,8 +17,6 @@ from tradingassistant.settings import (
     APP_BACKEND_URL,
     FRONTEND_URL,
 )
-from tradingassistant.runtime import create_default_app
-
 
 PROJECT_ROOT = Path(__file__).resolve().parent
 
@@ -25,7 +25,6 @@ app = create_default_app()
 
 def _resolve_reflex_executable() -> str:
     """返回当前可用的 Reflex 可执行文件。"""
-
     script_dir = Path(sys.executable).resolve().parent
     candidates = [
         script_dir / "reflex.exe",
@@ -41,7 +40,6 @@ def _resolve_reflex_executable() -> str:
 
 def _build_backend_command() -> list[str]:
     """构造业务 FastAPI 门面的启动命令。"""
-
     return [
         sys.executable,
         "-m",
@@ -56,13 +54,11 @@ def _build_backend_command() -> list[str]:
 
 def _build_frontend_command() -> list[str]:
     """构造 Reflex 前端开发服务器的启动命令。"""
-
     return [_resolve_reflex_executable(), "run"]
 
 
 def _build_frontend_env() -> dict[str, str]:
     """为 Reflex 前端注入统一的 API 基地址。"""
-
     env = os.environ.copy()
     env["TRADINGASSISTANT_API_BASE_URL"] = API_BASE_URL
     return env
@@ -70,7 +66,6 @@ def _build_frontend_env() -> dict[str, str]:
 
 def _terminate_process_tree(process: subprocess.Popen | None) -> None:
     """按进程树回收子进程。"""
-
     if process is None or process.poll() is not None:
         return
 
@@ -88,15 +83,12 @@ def _terminate_process_tree(process: subprocess.Popen | None) -> None:
         except subprocess.TimeoutExpired:
             process.kill()
 
-    try:
+    with contextlib.suppress(subprocess.TimeoutExpired):
         process.wait(timeout=5)
-    except subprocess.TimeoutExpired:
-        pass
 
 
 def _run_dev_stack() -> int:
     """同时启动业务后端与 Reflex 前端。"""
-
     backend_process = None
     frontend_process = None
     try:

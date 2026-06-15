@@ -1,4 +1,4 @@
-"""Theme tokens and style helpers for the native terminal workspace."""
+"""??????????????????"""
 
 from __future__ import annotations
 
@@ -31,7 +31,6 @@ TRADING_FONTS = {
 
 def shell_style() -> dict[str, str]:
     """Return the fixed full-screen page shell."""
-
     return {
         "width": "100%",
         "height": "100vh",
@@ -45,7 +44,6 @@ def shell_style() -> dict[str, str]:
 
 def terminal_bar_style() -> dict[str, str]:
     """Return the compact terminal top bar grid."""
-
     return {
         "display": "grid",
         "grid_template_columns": "270px minmax(0, 1fr) 470px",
@@ -58,7 +56,6 @@ def terminal_bar_style() -> dict[str, str]:
 
 def terminal_bar_block_style(*, border_right: bool = True, justify_end: bool = False) -> dict[str, str]:
     """Return one top-bar block style."""
-
     return {
         "display": "flex",
         "align_items": "center",
@@ -72,7 +69,6 @@ def terminal_bar_block_style(*, border_right: bool = True, justify_end: bool = F
 
 def workspace_style() -> dict[str, str]:
     """Return the three-column desktop terminal grid."""
-
     return {
         "display": "grid",
         "grid_template_columns": "260px minmax(0, 1fr) 360px",
@@ -86,7 +82,6 @@ def workspace_style() -> dict[str, str]:
 
 def column_style(*, rows: str, background: str, border_right: bool = True) -> dict[str, str]:
     """Return a terminal column style."""
-
     return {
         "display": "grid",
         "grid_template_rows": rows,
@@ -100,7 +95,6 @@ def column_style(*, rows: str, background: str, border_right: bool = True) -> di
 
 def panel_style(*, rows: str = "36px minmax(0, 1fr)", background: str | None = None, border_bottom: bool = True) -> dict[str, str]:
     """Return the base terminal panel style."""
-
     return {
         "display": "grid",
         "grid_template_rows": rows,
@@ -114,7 +108,6 @@ def panel_style(*, rows: str = "36px minmax(0, 1fr)", background: str | None = N
 
 def panel_head_style() -> dict[str, str]:
     """Return the panel title bar style."""
-
     return {
         "display": "flex",
         "align_items": "center",
@@ -134,7 +127,6 @@ def panel_head_style() -> dict[str, str]:
 
 def scroll_region_style(*, padding: str = "0") -> dict[str, str]:
     """Return the local-scroll region style."""
-
     return {
         "min_height": "0",
         "height": "100%",
@@ -149,7 +141,6 @@ def scroll_region_style(*, padding: str = "0") -> dict[str, str]:
 
 def terminal_button_style(*, tone: str = "amber", height: str = "26px", padding: str = "0 9px") -> dict[str, str]:
     """Return the compact terminal button base style."""
-
     return {
         "height": height,
         "padding": padding,
@@ -169,7 +160,6 @@ def terminal_button_style(*, tone: str = "amber", height: str = "26px", padding:
 
 def input_style() -> dict[str, str]:
     """Return the code-entry input style."""
-
     return {
         "height": "30px",
         "border": f"1px solid {TRADING_COLORS['line_strong']}",
@@ -185,7 +175,6 @@ def input_style() -> dict[str, str]:
 
 def compact_label_style() -> dict[str, str]:
     """Return dense uppercase label styling."""
-
     return {
         "font_size": "10px",
         "color": TRADING_COLORS["text_dim"],
@@ -201,7 +190,6 @@ def compact_label_style() -> dict[str, str]:
 
 def mono_value_style(*, color: str = TRADING_COLORS["text"], size: str = "12px", weight: str = "700") -> dict[str, str]:
     """Return terminal numeric typography styling."""
-
     return {
         "font_family": TRADING_FONTS["mono"],
         "font_size": size,
@@ -217,7 +205,6 @@ def mono_value_style(*, color: str = TRADING_COLORS["text"], size: str = "12px",
 
 def truncated_text_style(*, color: str | None = None, size: str = "10px", mono: bool = False) -> dict[str, str]:
     """Return stable truncation rules for dense side-rail text."""
-
     return {
         "font_family": TRADING_FONTS["mono"] if mono else TRADING_FONTS["sans"],
         "font_size": size,
@@ -235,7 +222,6 @@ def truncated_text_style(*, color: str | None = None, size: str = "10px", mono: 
 
 def hover_panel_style() -> dict[str, str]:
     """Return the compact chart hover surface style."""
-
     return {
         "position": "absolute",
         "top": "14px",

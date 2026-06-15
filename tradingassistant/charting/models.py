@@ -34,7 +34,6 @@ class RuntimeBar:
         Returns:
             适合缓存或传输的字典结构。
         """
-
         return {
             "symbol": self.symbol,
             "period": self.period,
@@ -66,7 +65,6 @@ class ChartSnapshot:
         Returns:
             字典形式的快照结构。
         """
-
         return {
             "topic": self.topic,
             "symbol": self.symbol,

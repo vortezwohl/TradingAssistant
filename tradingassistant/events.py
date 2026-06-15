@@ -19,7 +19,6 @@ def utc_now() -> datetime:
     Returns:
         当前带时区信息的 UTC 时间。
     """
-
     return datetime.now(timezone.utc)
 
 
@@ -76,7 +75,6 @@ class TickEvent(MarketEvent):
 
     def __post_init__(self) -> None:
         """确保事件类型被固定为 tick。"""
-
         self.event_type = MarketEventType.TICK
 
 
@@ -94,7 +92,6 @@ class QuoteEvent(MarketEvent):
 
     def __post_init__(self) -> None:
         """确保事件类型被固定为 quote。"""
-
         self.event_type = MarketEventType.QUOTE
 
 
@@ -114,7 +111,6 @@ class KlineEvent(MarketEvent):
 
     def __post_init__(self) -> None:
         """确保事件类型被固定为 kline。"""
-
         self.event_type = MarketEventType.KLINE
 
 
@@ -127,7 +123,6 @@ class DepthEvent(MarketEvent):
 
     def __post_init__(self) -> None:
         """确保事件类型被固定为 depth。"""
-
         self.event_type = MarketEventType.DEPTH
 
 
@@ -140,5 +135,4 @@ class ConnectionEvent(MarketEvent):
 
     def __post_init__(self) -> None:
         """确保事件类型被固定为 connection。"""
-
         self.event_type = MarketEventType.CONNECTION

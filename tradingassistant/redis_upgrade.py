@@ -25,7 +25,6 @@ class RedisUpgradePlan:
         Returns:
             需要逐项验证的迁移检查项。
         """
-
         return [
             "Single-instance Redis backend can replace MemoryCacheStore without changing service signatures.",
             "Chart topic keys and quote topic keys remain stable after backend switch.",

@@ -16,7 +16,6 @@ from typing import Any
 
 def utc_now() -> datetime:
     """返回当前 UTC 时间。"""
-
     return datetime.now(timezone.utc)
 
 
@@ -36,7 +35,6 @@ class CacheEntry:
 
     def is_expired(self, now: datetime | None = None) -> bool:
         """判断记录是否已经过期。"""
-
         if self.expires_at is None:
             return False
         now = now or utc_now()
@@ -80,14 +78,12 @@ class MemoryCacheStore(CacheStore):
         Args:
             max_entries: 允许保留的最大缓存条目数；为 ``None`` 表示不限制。
         """
-
         self._entries: dict[str, CacheEntry] = {}
         self._lock = RLock()
         self._max_entries = max_entries
 
     def get(self, key: str) -> Any | None:
         """读取缓存值；若已过期则移除并返回空。"""
-
         with self._lock:
             entry = self._entries.get(key)
             if entry is None:
@@ -99,7 +95,6 @@ class MemoryCacheStore(CacheStore):
 
     def set(self, key: str, value: Any, ttl_seconds: int | None = None) -> None:
         """写入缓存值。"""
-
         expires_at = None
         if ttl_seconds is not None:
             expires_at = utc_now() + timedelta(seconds=ttl_seconds)
@@ -109,24 +104,20 @@ class MemoryCacheStore(CacheStore):
 
     def delete(self, key: str) -> None:
         """删除缓存键。"""
-
         with self._lock:
             self._entries.pop(key, None)
 
     def has(self, key: str) -> bool:
         """判断缓存键是否存在且可读。"""
-
         return self.get(key) is not None
 
     def clear(self) -> None:
         """清空全部缓存。"""
-
         with self._lock:
             self._entries.clear()
 
     def evict_expired(self) -> int:
         """清理已过期缓存项。"""
-
         removed = 0
         now = utc_now()
         with self._lock:
@@ -138,13 +129,11 @@ class MemoryCacheStore(CacheStore):
 
     def snapshot(self) -> dict[str, CacheEntry]:
         """返回缓存快照，便于调试或测试。"""
-
         with self._lock:
             return dict(self._entries)
 
     def _evict_if_necessary_locked(self) -> None:
         """在超过容量时优先清理过期项，再淘汰最旧记录。"""
-
         if self._max_entries is None or len(self._entries) <= self._max_entries:
             return
 

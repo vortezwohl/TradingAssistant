@@ -56,7 +56,6 @@ class HistoryBackfillServiceTests(unittest.TestCase):
 
     def test_cache_is_used_before_gateway(self) -> None:
         """相同请求的第二次调用应命中缓存。"""
-
         gateway = FakeHistoryGateway()
         cache = MemoryCacheStore()
         service = HistoryBackfillService(gateway=gateway, cache_store=cache)
@@ -72,7 +71,6 @@ class BarAggregatorTests(unittest.TestCase):
 
     def test_tick_updates_forming_bar(self) -> None:
         """tick 应更新 forming 1m bar 的价格与成交量。"""
-
         aggregator = BarAggregator()
         event = TickEvent(
             event_type=None,  # type: ignore[arg-type]
@@ -90,7 +88,6 @@ class BarAggregatorTests(unittest.TestCase):
 
     def test_quote_updates_same_forming_bar(self) -> None:
         """同一分钟内 quote 应更新同一根 forming bar。"""
-
         aggregator = BarAggregator()
         aggregator.update_from_tick(
             TickEvent(
@@ -117,7 +114,6 @@ class BarAggregatorTests(unittest.TestCase):
 
     def test_finalize_due_bars_closes_old_minute(self) -> None:
         """跨分钟后应闭合上一根 bar。"""
-
         aggregator = BarAggregator()
         aggregator.update_from_tick(
             TickEvent(
@@ -138,7 +134,6 @@ class BarAggregatorTests(unittest.TestCase):
 
     def test_aggregate_period_groups_closed_bars(self) -> None:
         """闭合后的 1m bar 应能聚合为 5m。"""
-
         aggregator = BarAggregator()
         base_time = datetime(2026, 6, 7, 9, 30, tzinfo=timezone.utc)
         for index in range(5):

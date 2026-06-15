@@ -12,12 +12,12 @@ from tradingassistant.charting.history import HistoryBackfillService
 from tradingassistant.charting.models import RuntimeBar
 from tradingassistant.diagnostics import RuntimeMetrics
 from tradingassistant.events import KlineEvent, QuoteEvent
+from tradingassistant.indicators.engine import IncrementalIndicatorEngine
 from tradingassistant.infrastructure.cache import MemoryCacheStore
 from tradingassistant.infrastructure.subscription_registry import (
     InMemorySubscriptionRegistry,
 )
 from tradingassistant.infrastructure.topic_bus import InMemoryTopicBus
-from tradingassistant.indicators.engine import IncrementalIndicatorEngine
 from tradingassistant.transport.app import MarketMonitorService, create_app
 
 
@@ -63,7 +63,6 @@ class TransportAppTests(unittest.TestCase):
 
     def setUp(self) -> None:
         """准备测试应用。"""
-
         self.cache = MemoryCacheStore()
         self.topic_bus = InMemoryTopicBus()
         self.registry = InMemorySubscriptionRegistry()
@@ -91,7 +90,6 @@ class TransportAppTests(unittest.TestCase):
 
     def test_bootstrap_endpoint_returns_snapshot(self) -> None:
         """bootstrap REST 应返回图表快照。"""
-
         response = self.client.get(
             "/api/chart/bootstrap",
             params={"region": "HK", "code": "00700", "period": "1m", "bars": 3},
@@ -104,7 +102,6 @@ class TransportAppTests(unittest.TestCase):
 
     def test_bootstrap_endpoint_allows_frontend_origin(self) -> None:
         """bootstrap REST 应允许 Reflex 前端跨域访问。"""
-
         response = self.client.get(
             "/api/chart/bootstrap",
             params={"region": "HK", "code": "00700", "period": "1m", "bars": 3},
@@ -117,7 +114,6 @@ class TransportAppTests(unittest.TestCase):
         )
     def test_runtime_metrics_endpoint_returns_observability_snapshot(self) -> None:
         """运行态指标接口应暴露最小观测信息。"""
-
         self.client.get(
             "/api/chart/bootstrap",
             params={"region": "HK", "code": "00700", "period": "1m", "bars": 2},
@@ -130,7 +126,6 @@ class TransportAppTests(unittest.TestCase):
 
     def test_chart_websocket_receives_published_update(self) -> None:
         """图表 WS 订阅后应能收到发布的 bar 更新。"""
-
         with self.client.websocket_connect("/ws/chart/session-a") as websocket:
             websocket.send_text(json.dumps({"symbol": "HK.00700", "period": "1m"}))
             ack = websocket.receive_json()
@@ -160,7 +155,6 @@ class TransportAppTests(unittest.TestCase):
 
     def test_quote_websocket_receives_published_update(self) -> None:
         """列表行情 WS 订阅后应能收到 quote 更新。"""
-
         with self.client.websocket_connect("/ws/quotes/session-b") as websocket:
             websocket.send_text('{"action":"subscribe","name":"watchlist"}')
             ack = websocket.receive_json()
@@ -181,7 +175,6 @@ class TransportAppTests(unittest.TestCase):
 
     def test_alert_websocket_receives_published_update(self) -> None:
         """告警 WS 订阅后应能收到告警事件。"""
-
         with self.client.websocket_connect("/ws/alerts/session-alert") as websocket:
             websocket.send_text('{"action":"subscribe","name":"default"}')
             ack = websocket.receive_json()
@@ -199,7 +192,6 @@ class TransportAppTests(unittest.TestCase):
 
     def test_unsubscribe_releases_topic_registration(self) -> None:
         """显式退订后应释放会话到主题的注册关系。"""
-
         with self.client.websocket_connect("/ws/chart/session-unsub") as websocket:
             websocket.send_text(json.dumps({"symbol": "HK.00700", "period": "1m"}))
             subscribe_ack = websocket.receive_json()
@@ -230,9 +222,10 @@ class TransportAppTests(unittest.TestCase):
 
     def test_two_chart_sessions_receive_shared_broadcast(self) -> None:
         """两个图表会话订阅同一 topic 时都应收到更新。"""
-
-        with self.client.websocket_connect("/ws/chart/session-c1") as ws_one:
-            with self.client.websocket_connect("/ws/chart/session-c2") as ws_two:
+        with (
+            self.client.websocket_connect("/ws/chart/session-c1") as ws_one,
+            self.client.websocket_connect("/ws/chart/session-c2") as ws_two,
+        ):
                 subscribe_payload = json.dumps({"symbol": "HK.00700", "period": "1m"})
                 ws_one.send_text(subscribe_payload)
                 ws_two.send_text(subscribe_payload)

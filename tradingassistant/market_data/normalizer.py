@@ -31,7 +31,6 @@ def normalize_symbol(region: str, code: str) -> str:
     Returns:
         统一后的 `REGION.CODE` 字符串。
     """
-
     return SymbolRef(region=region.upper(), code=code).symbol
 
 
@@ -44,7 +43,6 @@ def parse_timestamp(value: Any) -> datetime:
     Returns:
         解析后的 UTC 时间。
     """
-
     if isinstance(value, datetime):
         if value.tzinfo is None:
             return value.replace(tzinfo=timezone.utc)
@@ -74,7 +72,6 @@ def to_float(value: Any) -> float | None:
     Returns:
         转换后的浮点数；无法转换时返回 `None`。
     """
-
     if value in (None, ""):
         return None
     try:
@@ -101,7 +98,6 @@ def normalize_history_bar(
     Returns:
         标准化后的 K 线记录。
     """
-
     symbol = normalize_symbol(region, code)
     return BarRecord(
         symbol=symbol,
@@ -133,7 +129,6 @@ def normalize_quote_payload(
     Returns:
         标准化后的快照行情。
     """
-
     symbol = normalize_symbol(region, code)
     return MarketSnapshot(
         symbol=symbol,
@@ -167,7 +162,6 @@ def quote_event_from_payload(
     Returns:
         标准化后的 QuoteEvent。
     """
-
     snapshot = normalize_quote_payload(region=region, code=code, payload=payload)
     return QuoteEvent(
         event_type=QuoteEvent.__dataclass_fields__["event_type"].default,  # type: ignore[index]
@@ -193,7 +187,6 @@ def tick_event_from_payload(
     source: str = "itick",
 ) -> TickEvent:
     """由原始 tick payload 构造 TickEvent。"""
-
     return TickEvent(
         event_type=TickEvent.__dataclass_fields__["event_type"].default,  # type: ignore[index]
         symbol=normalize_symbol(region, code),
@@ -214,7 +207,6 @@ def kline_event_from_bar(
     provisional: bool = False,
 ) -> KlineEvent:
     """由标准化 K 线记录构造 KlineEvent。"""
-
     return KlineEvent(
         event_type=KlineEvent.__dataclass_fields__["event_type"].default,  # type: ignore[index]
         symbol=bar.symbol,
@@ -240,7 +232,6 @@ def connection_event(
     source: str = "itick",
 ) -> ConnectionEvent:
     """构造连接状态事件。"""
-
     return ConnectionEvent(
         event_type=ConnectionEvent.__dataclass_fields__["event_type"].default,  # type: ignore[index]
         symbol="system",
@@ -259,7 +250,6 @@ def serializable_bar(bar: BarRecord) -> dict[str, Any]:
     Returns:
         适合缓存或传输的字典结构。
     """
-
     payload = asdict(bar)
     payload["bar_time"] = bar.bar_time.isoformat()
     return payload

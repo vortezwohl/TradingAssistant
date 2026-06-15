@@ -32,7 +32,6 @@ class SymbolRef:
         Returns:
             `REGION.CODE` 形式的字符串。
         """
-
         return f"{self.region}.{self.code}"
 
 

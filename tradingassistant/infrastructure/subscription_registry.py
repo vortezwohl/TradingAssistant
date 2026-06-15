@@ -49,7 +49,6 @@ class InMemorySubscriptionRegistry(SubscriptionRegistry):
 
     def __init__(self) -> None:
         """初始化进程内订阅注册表。"""
-
         self._session_topics: dict[str, set[str]] = defaultdict(set)
         self._topic_sessions: dict[str, set[str]] = defaultdict(set)
         self._lock = RLock()
@@ -61,7 +60,6 @@ class InMemorySubscriptionRegistry(SubscriptionRegistry):
             session_id: 会话标识。
             topic: 主题标识。
         """
-
         with self._lock:
             self._session_topics[session_id].add(topic)
             self._topic_sessions[topic].add(session_id)
@@ -73,7 +71,6 @@ class InMemorySubscriptionRegistry(SubscriptionRegistry):
             session_id: 会话标识。
             topic: 主题标识。
         """
-
         with self._lock:
             if session_id in self._session_topics:
                 self._session_topics[session_id].discard(topic)
@@ -93,7 +90,6 @@ class InMemorySubscriptionRegistry(SubscriptionRegistry):
         Returns:
             被解除关联的主题列表。
         """
-
         with self._lock:
             topics = list(self._session_topics.pop(session_id, set()))
             for topic in topics:
@@ -114,7 +110,6 @@ class InMemorySubscriptionRegistry(SubscriptionRegistry):
         Returns:
             主题集合副本。
         """
-
         with self._lock:
             return set(self._session_topics.get(session_id, set()))
 
@@ -127,7 +122,6 @@ class InMemorySubscriptionRegistry(SubscriptionRegistry):
         Returns:
             会话集合副本。
         """
-
         with self._lock:
             return set(self._topic_sessions.get(topic, set()))
 
@@ -140,13 +134,11 @@ class InMemorySubscriptionRegistry(SubscriptionRegistry):
         Returns:
             当前主题订阅数。
         """
-
         with self._lock:
             return len(self._topic_sessions.get(topic, set()))
 
     def clear(self) -> None:
         """清空全部注册关系。"""
-
         with self._lock:
             self._session_topics.clear()
             self._topic_sessions.clear()
@@ -157,7 +149,6 @@ class InMemorySubscriptionRegistry(SubscriptionRegistry):
         Returns:
             当前注册状态的可序列化快照。
         """
-
         with self._lock:
             return {
                 "session_topics": {

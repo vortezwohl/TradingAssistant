@@ -34,7 +34,6 @@ class DemoHistoryGateway:
         end: str | None = None,
     ) -> list[RuntimeBar]:
         """返回一组稳定的演示 K 线数据。"""
-
         del end
         base_time = datetime(2026, 6, 7, 9, 30, tzinfo=timezone.utc)
         return [
@@ -72,7 +71,6 @@ def build_default_runtime() -> AppRuntime:
     Returns:
         已完成装配的运行时对象。
     """
-
     cache_store = MemoryCacheStore()
     topic_bus = InMemoryTopicBus()
     registry = InMemorySubscriptionRegistry()
@@ -113,5 +111,4 @@ def build_default_runtime() -> AppRuntime:
 
 def create_default_app() -> FastAPI:
     """返回默认 FastAPI 应用对象。"""
-
     return build_default_runtime().app

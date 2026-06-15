@@ -13,7 +13,6 @@ from dataclasses import dataclass
 from threading import RLock
 from typing import Any, Callable
 
-
 Subscriber = Callable[[str, Any], None]
 
 
@@ -64,7 +63,6 @@ class InMemoryTopicBus(TopicBus):
 
     def __init__(self) -> None:
         """初始化进程内主题总线。"""
-
         self._topics: dict[str, dict[str, Subscriber]] = defaultdict(dict)
         self._lock = RLock()
 
@@ -84,7 +82,6 @@ class InMemoryTopicBus(TopicBus):
         Returns:
             订阅句柄。
         """
-
         with self._lock:
             self._topics[topic][subscriber_id] = callback
         return SubscriptionHandle(topic=topic, subscriber_id=subscriber_id)
@@ -95,7 +92,6 @@ class InMemoryTopicBus(TopicBus):
         Args:
             handle: 订阅句柄。
         """
-
         with self._lock:
             topic_subscribers = self._topics.get(handle.topic)
             if topic_subscribers is None:
@@ -114,7 +110,6 @@ class InMemoryTopicBus(TopicBus):
         Returns:
             成功命中的订阅者数量。
         """
-
         with self._lock:
             callbacks = list(self._topics.get(topic, {}).items())
         for _, callback in callbacks:
@@ -130,13 +125,11 @@ class InMemoryTopicBus(TopicBus):
         Returns:
             当前订阅者数量。
         """
-
         with self._lock:
             return len(self._topics.get(topic, {}))
 
     def clear(self) -> None:
         """清空所有主题订阅。"""
-
         with self._lock:
             self._topics.clear()
 
@@ -146,7 +139,6 @@ class InMemoryTopicBus(TopicBus):
         Returns:
             每个主题下的订阅者标识列表。
         """
-
         with self._lock:
             return {
                 topic: list(subscribers.keys())

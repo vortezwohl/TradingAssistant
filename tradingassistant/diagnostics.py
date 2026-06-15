@@ -28,12 +28,10 @@ class RuntimeMetrics:
 
     def record_cache_hit(self) -> None:
         """记录一次缓存命中。"""
-
         self.cache_hits += 1
 
     def record_cache_miss(self) -> None:
         """记录一次缓存未命中。"""
-
         self.cache_misses += 1
 
     def record_publish(
@@ -44,7 +42,6 @@ class RuntimeMetrics:
         latency_ms: float | None = None,
     ) -> None:
         """记录一次发布行为。"""
-
         self.publish_count += 1
         self.topic_subscribers[topic] = subscriber_count
         self.last_publish_payload = payload
@@ -52,22 +49,18 @@ class RuntimeMetrics:
 
     def update_topic_subscribers(self, topic: str, subscriber_count: int) -> None:
         """更新某个主题当前的订阅数。"""
-
         self.topic_subscribers[topic] = subscriber_count
 
     def record_reconnect(self) -> None:
         """记录一次重连。"""
-
         self.reconnect_count += 1
 
     def record_error(self) -> None:
         """记录一次错误。"""
-
         self.error_count += 1
 
     def snapshot(self) -> dict[str, Any]:
         """返回可序列化的指标快照。"""
-
         return {
             "cache_hits": self.cache_hits,
             "cache_misses": self.cache_misses,

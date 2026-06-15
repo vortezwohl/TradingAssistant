@@ -30,7 +30,6 @@ class RuntimeMetricsTests(unittest.TestCase):
 
     def test_runtime_metrics_snapshot_contains_counts(self) -> None:
         """指标快照应记录关键计数。"""
-
         metrics = RuntimeMetrics()
         metrics.record_cache_hit()
         metrics.record_cache_miss()
@@ -47,7 +46,6 @@ class RuntimeMetricsTests(unittest.TestCase):
 
     def test_update_topic_subscribers_overwrites_latest_count(self) -> None:
         """订阅数快照应反映最近一次主题状态。"""
-
         metrics = RuntimeMetrics()
         metrics.update_topic_subscribers("quotes:watchlist", 2)
         metrics.update_topic_subscribers("quotes:watchlist", 0)
@@ -60,7 +58,6 @@ class StableKeyTests(unittest.TestCase):
 
     def test_chart_and_snapshot_keys_are_stable(self) -> None:
         """chart / snapshot / indicator key 应保持固定格式。"""
-
         self.assertEqual(chart_topic("HK.00700", "1m"), "chart:HK.00700:1m")
         self.assertEqual(chart_snapshot_key("HK.00700", "1m"), "snapshot:chart:HK.00700:1m")
         self.assertEqual(indicator_snapshot_key("HK.00700", "1m"), "indicator:HK.00700:1m")
@@ -74,7 +71,6 @@ class ReplaceableImplementationsTests(unittest.TestCase):
 
     def test_memory_cache_behaves_like_replaceable_store(self) -> None:
         """MemoryCacheStore 至少应满足 set/get/delete/clear 流程。"""
-
         store = MemoryCacheStore()
         store.set("k", {"v": 1})
         self.assertEqual(store.get("k"), {"v": 1})
@@ -86,7 +82,6 @@ class ReplaceableImplementationsTests(unittest.TestCase):
 
     def test_topic_bus_and_registry_are_replaceable_contracts(self) -> None:
         """TopicBus 与 SubscriptionRegistry 默认实现应具备可替换语义。"""
-
         bus = InMemoryTopicBus()
         registry = InMemorySubscriptionRegistry()
         received = []
@@ -109,7 +104,6 @@ class RedisUpgradePlanTests(unittest.TestCase):
 
     def test_upgrade_plan_contains_validation_items(self) -> None:
         """迁移计划应包含关键验证项。"""
-
         plan = RedisUpgradePlan()
         checklist = plan.validation_checklist()
         self.assertGreaterEqual(len(checklist), 5)

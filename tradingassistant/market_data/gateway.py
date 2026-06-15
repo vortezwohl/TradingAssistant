@@ -21,7 +21,6 @@ from tradingassistant.market_data.normalizer import (
     normalize_history_bar,
 )
 
-
 MessageHandler = Callable[[dict[str, Any]], None]
 ConnectionHandler = Callable[[ConnectionEvent], None]
 
@@ -39,7 +38,6 @@ class ITickMarketGateway:
         Args:
             token: iTick API token。
         """
-
         self._client = ITickClient(token)
         self._message_handler: MessageHandler | None = None
         self._connection_handler: ConnectionHandler | None = None
@@ -50,7 +48,6 @@ class ITickMarketGateway:
         Args:
             handler: 接收原始消息字典的回调。
         """
-
         self._message_handler = handler
 
     def set_connection_handler(self, handler: ConnectionHandler) -> None:
@@ -59,7 +56,6 @@ class ITickMarketGateway:
         Args:
             handler: 接收连接状态事件的回调。
         """
-
         self._connection_handler = handler
 
     def list_symbols(self) -> list[dict[str, Any]]:
@@ -71,7 +67,6 @@ class ITickMarketGateway:
         Raises:
             ITickGatewayError: 当上游请求失败时抛出。
         """
-
         try:
             data = self._client.get_symbol_list()
         except Exception as exc:  # noqa: BLE001
@@ -102,7 +97,6 @@ class ITickMarketGateway:
         Raises:
             ITickGatewayError: 当上游请求失败时抛出。
         """
-
         try:
             rows = self._client.get_stock_kline(region, code, period, limit, end=end)
         except Exception as exc:  # noqa: BLE001
@@ -119,7 +113,6 @@ class ITickMarketGateway:
 
     def connect_stock_stream(self) -> None:
         """连接股票 WebSocket 流并绑定内部回调。"""
-
         self._emit_connection(
             connection_event(state=ConnectionState.CONNECTING),
         )
@@ -137,7 +130,6 @@ class ITickMarketGateway:
         Raises:
             ITickGatewayError: 当序列化或发送失败时抛出。
         """
-
         payload = {
             "ac": "subscribe",
             "params": request.symbols,
@@ -151,7 +143,6 @@ class ITickMarketGateway:
 
     def close(self) -> None:
         """关闭 WebSocket 连接。"""
-
         self._client.close_websocket()
         self._emit_connection(connection_event(state=ConnectionState.CLOSED))
 
@@ -161,7 +152,6 @@ class ITickMarketGateway:
         Args:
             message: 原始文本消息。
         """
-
         if self._message_handler is None:
             return
         try:
@@ -176,7 +166,6 @@ class ITickMarketGateway:
         Args:
             error: 原始异常。
         """
-
         self._emit_connection(
             connection_event(
                 state=ConnectionState.ERROR,
@@ -190,6 +179,5 @@ class ITickMarketGateway:
         Args:
             event: 连接状态事件。
         """
-
         if self._connection_handler is not None:
             self._connection_handler(event)
