@@ -213,7 +213,11 @@ def build_chart_legend(
     candles = active_model["candles"]
     active_index = _clamp_chart_index(index, len(candles))
     active_candle = candles[active_index]
-    previous_close = active_model["prev_close"] if active_index == 0 else candles[active_index - 1]["close"]
+    previous_close = (
+        active_model["prev_close"]
+        if active_index == 0
+        else candles[active_index - 1]["close"]
+    )
     legend: list[dict[str, str]] = [
         {
             "label": active_model["meta"]["code"],
@@ -266,10 +270,17 @@ def build_chart_hover_details(
     analytics = active_model["analytics"]
     active_index = _clamp_chart_index(index, len(candles))
     candle = candles[active_index]
-    previous_close = active_model["prev_close"] if active_index == 0 else candles[active_index - 1]["close"]
+    previous_close = (
+        active_model["prev_close"]
+        if active_index == 0
+        else candles[active_index - 1]["close"]
+    )
     price_change = candle["close"] - previous_close
     price_change_pct = (price_change / previous_close) * 100 if previous_close else 0.0
-    vwap_gap = ((candle["close"] - analytics["vwap"][active_index]) / analytics["vwap"][active_index]) * 100
+    vwap_gap = (
+        (candle["close"] - analytics["vwap"][active_index])
+        / analytics["vwap"][active_index]
+    ) * 100
     overlay_count = str(len(_build_overlay_legend_models(active_model, overlays)))
     return {
         "slot": f"{active_model['scale']} BAR {active_index + 1:02d}/{len(candles):02d}",
@@ -290,7 +301,9 @@ def build_chart_hover_details(
     }
 
 
-def build_primary_chart_svg(active_model: dict[str, Any], overlays: list[str], route: str) -> str:
+def build_primary_chart_svg(
+    active_model: dict[str, Any], overlays: list[str], route: str
+) -> str:
     """Build the primary chart SVG for the center chart stage."""
 
     width = PRIMARY_CHART_WIDTH
@@ -324,8 +337,14 @@ def build_primary_chart_svg(active_model: dict[str, Any], overlays: list[str], r
         low_y = to_y(candle["low"])
         top = min(open_y, close_y)
         body_height = max(abs(close_y - open_y), 1.25)
-        fill = TONE_COLORS["up"] if candle["close"] >= candle["open"] else TONE_COLORS["down"]
-        candle_marks.append(f"<line x1='{x:.2f}' y1='{high_y:.2f}' x2='{x:.2f}' y2='{low_y:.2f}' stroke='{fill}' stroke-width='1.1'></line>")
+        fill = (
+            TONE_COLORS["up"]
+            if candle["close"] >= candle["open"]
+            else TONE_COLORS["down"]
+        )
+        candle_marks.append(
+            f"<line x1='{x:.2f}' y1='{high_y:.2f}' x2='{x:.2f}' y2='{low_y:.2f}' stroke='{fill}' stroke-width='1.1'></line>"
+        )
         candle_marks.append(
             "<rect "
             f"x='{x - candle_width * 0.27:.2f}' y='{top:.2f}' width='{candle_width * 0.54:.2f}' "
@@ -334,24 +353,32 @@ def build_primary_chart_svg(active_model: dict[str, Any], overlays: list[str], r
 
     overlays_svg: list[str] = []
     if "MA" in overlays:
-        overlays_svg.extend([
-            f"<path d='{_line_path(analytics['ma5'], minimum, maximum, width, height)}' fill='none' stroke='{TONE_COLORS['amber']}' stroke-width='1.6'></path>",
-            f"<path d='{_line_path(analytics['ma20'], minimum, maximum, width, height)}' fill='none' stroke='{TONE_COLORS['blue']}' stroke-width='1.4'></path>",
-            f"<path d='{_line_path(analytics['ma60'], minimum, maximum, width, height)}' fill='none' stroke='{TONE_COLORS['cyan']}' stroke-width='1.2'></path>",
-        ])
+        overlays_svg.extend(
+            [
+                f"<path d='{_line_path(analytics['ma5'], minimum, maximum, width, height)}' fill='none' stroke='{TONE_COLORS['amber']}' stroke-width='1.6'></path>",
+                f"<path d='{_line_path(analytics['ma20'], minimum, maximum, width, height)}' fill='none' stroke='{TONE_COLORS['blue']}' stroke-width='1.4'></path>",
+                f"<path d='{_line_path(analytics['ma60'], minimum, maximum, width, height)}' fill='none' stroke='{TONE_COLORS['cyan']}' stroke-width='1.2'></path>",
+            ]
+        )
     if "EMA" in overlays:
-        overlays_svg.extend([
-            f"<path d='{_line_path(analytics['ema12'], minimum, maximum, width, height)}' fill='none' stroke='#9ad97b' stroke-width='1.2'></path>",
-            f"<path d='{_line_path(analytics['ema26'], minimum, maximum, width, height)}' fill='none' stroke='#f08d49' stroke-width='1.2' stroke-dasharray='5 4'></path>",
-        ])
+        overlays_svg.extend(
+            [
+                f"<path d='{_line_path(analytics['ema12'], minimum, maximum, width, height)}' fill='none' stroke='#9ad97b' stroke-width='1.2'></path>",
+                f"<path d='{_line_path(analytics['ema26'], minimum, maximum, width, height)}' fill='none' stroke='#f08d49' stroke-width='1.2' stroke-dasharray='5 4'></path>",
+            ]
+        )
     if "BOLL" in overlays:
-        overlays_svg.extend([
-            f"<path d='{_line_path(analytics['boll_upper'], minimum, maximum, width, height)}' fill='none' stroke='{TONE_COLORS['cyan']}' stroke-width='1.0' stroke-dasharray='4 3'></path>",
-            f"<path d='{_line_path(analytics['boll_mid'], minimum, maximum, width, height)}' fill='none' stroke='#406c84' stroke-width='1.0'></path>",
-            f"<path d='{_line_path(analytics['boll_lower'], minimum, maximum, width, height)}' fill='none' stroke='{TONE_COLORS['cyan']}' stroke-width='1.0' stroke-dasharray='4 3'></path>",
-        ])
+        overlays_svg.extend(
+            [
+                f"<path d='{_line_path(analytics['boll_upper'], minimum, maximum, width, height)}' fill='none' stroke='{TONE_COLORS['cyan']}' stroke-width='1.0' stroke-dasharray='4 3'></path>",
+                f"<path d='{_line_path(analytics['boll_mid'], minimum, maximum, width, height)}' fill='none' stroke='#406c84' stroke-width='1.0'></path>",
+                f"<path d='{_line_path(analytics['boll_lower'], minimum, maximum, width, height)}' fill='none' stroke='{TONE_COLORS['cyan']}' stroke-width='1.0' stroke-dasharray='4 3'></path>",
+            ]
+        )
     if "VWAP" in overlays:
-        overlays_svg.append(f"<path d='{_line_path(analytics['vwap'], minimum, maximum, width, height)}' fill='none' stroke='{TONE_COLORS['yellow']}' stroke-width='1.1'></path>")
+        overlays_svg.append(
+            f"<path d='{_line_path(analytics['vwap'], minimum, maximum, width, height)}' fill='none' stroke='{TONE_COLORS['yellow']}' stroke-width='1.1'></path>"
+        )
 
     route_overlay = ""
     if route == "orderflow":
@@ -381,12 +408,13 @@ def build_primary_chart_svg(active_model: dict[str, Any], overlays: list[str], r
 
     return f"<svg viewBox='0 0 {width:.0f} {height:.0f}' preserveAspectRatio='none' aria-label='Primary chart'>{route_overlay}{''.join(candle_marks)}{''.join(overlays_svg)}</svg>"
 
-
     def to_y(number: float) -> float:
         return height - (((number - minimum) / span) * height)
 
 
-def build_depth_rows(active_model: dict[str, Any], depth_mode: str) -> list[dict[str, str]]:
+def build_depth_rows(
+    active_model: dict[str, Any], depth_mode: str
+) -> list[dict[str, str]]:
     """Build the right-rail market depth rows."""
 
     base = active_model["last"]
@@ -407,13 +435,15 @@ def build_depth_rows(active_model: dict[str, Any], depth_mode: str) -> list[dict
         else:
             bid_text = compact_volume(bid_size)
             ask_text = compact_volume(ask_size)
-        rows.append({
-            "price": format_number(price),
-            "bid_text": bid_text,
-            "ask_text": ask_text,
-            "bid_width": f"{bid_ratio * 100:.1f}%",
-            "ask_width": f"{ask_ratio * 100:.1f}%",
-        })
+        rows.append(
+            {
+                "price": format_number(price),
+                "bid_text": bid_text,
+                "ask_text": ask_text,
+                "bid_width": f"{bid_ratio * 100:.1f}%",
+                "ask_width": f"{ask_ratio * 100:.1f}%",
+            }
+        )
     return rows
 
 
@@ -427,11 +457,13 @@ def build_order_book_rows(active_model: dict[str, Any]) -> list[dict[str, str]]:
         bid_price = base - ((index + 1) * 0.1)
         ask_size = 3200 + index * 740
         bid_size = 3400 + (9 - index) * 820
-        rows.append({
-            "ask_price": format_number(ask_price),
-            "ask_size": compact_volume(ask_size),
-            "spread": format_number(ask_price - bid_price),
-            "bid_size": compact_volume(bid_size),
-            "bid_price": format_number(bid_price),
-        })
+        rows.append(
+            {
+                "ask_price": format_number(ask_price),
+                "ask_size": compact_volume(ask_size),
+                "spread": format_number(ask_price - bid_price),
+                "bid_size": compact_volume(bid_size),
+                "bid_price": format_number(bid_price),
+            }
+        )
     return rows

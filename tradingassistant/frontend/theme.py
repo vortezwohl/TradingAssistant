@@ -28,7 +28,6 @@ TRADING_FONTS = {
 }
 
 
-
 def shell_style() -> dict[str, str]:
     """Return the fixed full-screen page shell."""
     return {
@@ -54,7 +53,9 @@ def terminal_bar_style() -> dict[str, str]:
     }
 
 
-def terminal_bar_block_style(*, border_right: bool = True, justify_end: bool = False) -> dict[str, str]:
+def terminal_bar_block_style(
+    *, border_right: bool = True, justify_end: bool = False
+) -> dict[str, str]:
     """Return one top-bar block style."""
     return {
         "display": "flex",
@@ -80,7 +81,9 @@ def workspace_style() -> dict[str, str]:
     }
 
 
-def column_style(*, rows: str, background: str, border_right: bool = True) -> dict[str, str]:
+def column_style(
+    *, rows: str, background: str, border_right: bool = True
+) -> dict[str, str]:
     """Return a terminal column style."""
     return {
         "display": "grid",
@@ -93,14 +96,21 @@ def column_style(*, rows: str, background: str, border_right: bool = True) -> di
     }
 
 
-def panel_style(*, rows: str = "36px minmax(0, 1fr)", background: str | None = None, border_bottom: bool = True) -> dict[str, str]:
+def panel_style(
+    *,
+    rows: str = "36px minmax(0, 1fr)",
+    background: str | None = None,
+    border_bottom: bool = True,
+) -> dict[str, str]:
     """Return the base terminal panel style."""
     return {
         "display": "grid",
         "grid_template_rows": rows,
         "min_height": "0",
         "background": background or TRADING_COLORS["surface_alt"],
-        "border_bottom": f"1px solid {TRADING_COLORS['line']}" if border_bottom else "0",
+        "border_bottom": f"1px solid {TRADING_COLORS['line']}"
+        if border_bottom
+        else "0",
         "overflow": "hidden",
         "box_sizing": "border-box",
     }
@@ -139,7 +149,9 @@ def scroll_region_style(*, padding: str = "0") -> dict[str, str]:
     }
 
 
-def terminal_button_style(*, tone: str = "amber", height: str = "26px", padding: str = "0 9px") -> dict[str, str]:
+def terminal_button_style(
+    *, tone: str = "amber", height: str = "26px", padding: str = "0 9px"
+) -> dict[str, str]:
     """Return the compact terminal button base style."""
     return {
         "height": height,
@@ -188,7 +200,9 @@ def compact_label_style() -> dict[str, str]:
     }
 
 
-def mono_value_style(*, color: str = TRADING_COLORS["text"], size: str = "12px", weight: str = "700") -> dict[str, str]:
+def mono_value_style(
+    *, color: str = TRADING_COLORS["text"], size: str = "12px", weight: str = "700"
+) -> dict[str, str]:
     """Return terminal numeric typography styling."""
     return {
         "font_family": TRADING_FONTS["mono"],
@@ -203,7 +217,9 @@ def mono_value_style(*, color: str = TRADING_COLORS["text"], size: str = "12px",
     }
 
 
-def truncated_text_style(*, color: str | None = None, size: str = "10px", mono: bool = False) -> dict[str, str]:
+def truncated_text_style(
+    *, color: str | None = None, size: str = "10px", mono: bool = False
+) -> dict[str, str]:
     """Return stable truncation rules for dense side-rail text."""
     return {
         "font_family": TRADING_FONTS["mono"] if mono else TRADING_FONTS["sans"],

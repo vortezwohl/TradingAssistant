@@ -1,5 +1,6 @@
-"""承载指标初始化、增量计算与一致性校验逻辑。
+"""Indicator initialization, incremental calculation, and consistency verification.
 
-当前阶段先建立统一入口，后续将在这里接入基于 OpenTrade 的历史初始化、
-增量指标状态模型与校验工具。
+This establishes the unified entry point now; historical initialization based
+on OpenTrade, incremental indicator state model, and verification tools will
+be wired in later.
 """

@@ -1,7 +1,9 @@
-"""验证基础抽象的默认 MEMORY 实现。
+"""Verify default MEMORY implementations of basic abstractions.
 
-本文件覆盖缓存、主题广播和订阅注册的进程内实现，确保上层业务依赖的是
-稳定契约，而不是偶然行为。同时补充内存淘汰与空主题回收等 MEMORY 路线要求。
+This file covers in-process implementations of cache, topic broadcast, and
+subscription registration to ensure upper-layer business logic depends on
+stable contracts rather than incidental behavior. Also adds MEMORY-path
+requirements like eviction and empty-topic reclamation.
 """
 
 from __future__ import annotations
@@ -16,24 +18,24 @@ from tradingassistant.infrastructure.topic_bus import InMemoryTopicBus
 
 
 class MemoryCacheStoreTests(unittest.TestCase):
-    """验证内存缓存实现。"""
+    """Test in-memory cache implementation."""
 
     def test_set_and_get_value(self) -> None:
-        """缓存应支持写入与读取。"""
+        """Cache should support write and read."""
         store = MemoryCacheStore()
         store.set("chart:HK.00700:1m", {"bars": 10})
         self.assertEqual(store.get("chart:HK.00700:1m"), {"bars": 10})
         self.assertTrue(store.has("chart:HK.00700:1m"))
 
     def test_expired_value_is_evicted_on_read(self) -> None:
-        """过期值在读取时应被移除。"""
+        """Expired values should be removed on read."""
         store = MemoryCacheStore()
         store.set("temp", {"v": 1}, ttl_seconds=0)
         self.assertIsNone(store.get("temp"))
         self.assertFalse(store.has("temp"))
 
     def test_clear_removes_all_entries(self) -> None:
-        """clear 应清空全部缓存。"""
+        """clear should remove all cache entries."""
         store = MemoryCacheStore()
         store.set("a", 1)
         store.set("b", 2)
@@ -42,7 +44,7 @@ class MemoryCacheStoreTests(unittest.TestCase):
         self.assertFalse(store.has("b"))
 
     def test_capacity_limit_evicts_oldest_entries(self) -> None:
-        """超过容量时应淘汰最旧条目，避免热状态无限增长。"""
+        """Should evict oldest entries when exceeding capacity to prevent unbounded growth."""
         store = MemoryCacheStore(max_entries=2)
         store.set("k1", 1)
         store.set("k2", 2)
@@ -53,10 +55,10 @@ class MemoryCacheStoreTests(unittest.TestCase):
 
 
 class InMemoryTopicBusTests(unittest.TestCase):
-    """验证进程内主题总线。"""
+    """Test in-process topic bus."""
 
     def test_publish_calls_all_subscribers(self) -> None:
-        """同一主题的所有订阅者都应收到消息。"""
+        """All subscribers of the same topic should receive messages."""
         bus = InMemoryTopicBus()
         received: list[tuple[str, object]] = []
 
@@ -77,7 +79,7 @@ class InMemoryTopicBusTests(unittest.TestCase):
         self.assertTrue(all(topic == "chart:HK.00700:1m" for topic, _ in received))
 
     def test_unsubscribe_removes_subscriber(self) -> None:
-        """取消订阅后不应再收到消息。"""
+        """Should not receive messages after unsubscribing."""
         bus = InMemoryTopicBus()
         received: list[tuple[str, object]] = []
         handle = bus.subscribe(
@@ -93,10 +95,10 @@ class InMemoryTopicBusTests(unittest.TestCase):
 
 
 class InMemorySubscriptionRegistryTests(unittest.TestCase):
-    """验证进程内订阅注册表。"""
+    """Test in-process subscription registry."""
 
     def test_register_tracks_session_and_topic(self) -> None:
-        """注册后应能双向查询。"""
+        """Should support bidirectional query after registration."""
         registry = InMemorySubscriptionRegistry()
         registry.register("session-1", "chart:HK.00700:1m")
         self.assertEqual(
@@ -113,7 +115,7 @@ class InMemorySubscriptionRegistryTests(unittest.TestCase):
         )
 
     def test_unregister_all_returns_affected_topics(self) -> None:
-        """unregister_all 应返回解除关联的主题列表。"""
+        """unregister_all should return the list of unlinked topics."""
         registry = InMemorySubscriptionRegistry()
         registry.register("session-1", "chart:HK.00700:1m")
         registry.register("session-1", "quotes:watchlist")
@@ -122,7 +124,7 @@ class InMemorySubscriptionRegistryTests(unittest.TestCase):
         self.assertEqual(registry.topics_for_session("session-1"), set())
 
     def test_unregister_reclaims_empty_topic(self) -> None:
-        """最后一个会话退订后应回收空主题映射。"""
+        """Empty topic mapping should be reclaimed after last session unsubscribes."""
         registry = InMemorySubscriptionRegistry()
         registry.register("session-1", "alerts:default")
         registry.unregister("session-1", "alerts:default")

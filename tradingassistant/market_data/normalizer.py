@@ -1,8 +1,9 @@
-"""实现 iTick 原始消息到领域事件的标准化转换。
+"""Normalize iTick raw messages into domain events.
 
-该模块是接入层的核心适配器之一，负责把原始 REST / WebSocket 数据
-转换为稳定的内部契约和领域事件。所有字段提取都应集中在这里，
-避免协议细节扩散到服务层。
+This module is one of the core adapters in the access layer, responsible for
+converting raw REST/WebSocket data into stable internal contracts and domain
+events. All field extraction should be centralized here to prevent protocol
+details from leaking into the service layer.
 """
 
 from __future__ import annotations
@@ -22,26 +23,26 @@ from tradingassistant.market_data.contracts import BarRecord, MarketSnapshot, Sy
 
 
 def normalize_symbol(region: str, code: str) -> str:
-    """构造统一 symbol 字符串。
+    """Build a unified symbol string.
 
     Args:
-        region: 市场区域。
-        code: 原始代码。
+        region: Market region.
+        code: Raw code.
 
     Returns:
-        统一后的 `REGION.CODE` 字符串。
+        Normalized `REGION.CODE` string.
     """
     return SymbolRef(region=region.upper(), code=code).symbol
 
 
 def parse_timestamp(value: Any) -> datetime:
-    """把多种时间表达解析为 UTC 时间。
+    """Parse various time representations to UTC datetime.
 
     Args:
-        value: 原始时间值。
+        value: Raw time value.
 
     Returns:
-        解析后的 UTC 时间。
+        Parsed UTC datetime.
     """
     if isinstance(value, datetime):
         if value.tzinfo is None:
@@ -64,13 +65,13 @@ def parse_timestamp(value: Any) -> datetime:
 
 
 def to_float(value: Any) -> float | None:
-    """把原始值尽量转换为浮点数。
+    """Convert raw value to float when possible.
 
     Args:
-        value: 原始值。
+        value: Raw value.
 
     Returns:
-        转换后的浮点数；无法转换时返回 `None`。
+        Converted float; returns `None` when conversion fails.
     """
     if value in (None, ""):
         return None
@@ -87,16 +88,16 @@ def normalize_history_bar(
     period: str,
     payload: dict[str, Any],
 ) -> BarRecord:
-    """把单条历史 K 线记录转换为标准化契约。
+    """Convert a single historical K-line record to a normalized contract.
 
     Args:
-        region: 市场区域。
-        code: 标的代码。
-        period: K 线周期。
-        payload: 原始记录。
+        region: Market region.
+        code: Instrument code.
+        period: K-line period.
+        payload: Raw record.
 
     Returns:
-        标准化后的 K 线记录。
+        Normalized K-line record.
     """
     symbol = normalize_symbol(region, code)
     return BarRecord(
@@ -119,15 +120,15 @@ def normalize_quote_payload(
     code: str,
     payload: dict[str, Any],
 ) -> MarketSnapshot:
-    """把快照行情 payload 转换为标准化快照。
+    """Convert a quote snapshot payload to a normalized snapshot.
 
     Args:
-        region: 市场区域。
-        code: 标的代码。
-        payload: 原始 payload。
+        region: Market region.
+        code: Instrument code.
+        payload: Raw payload.
 
     Returns:
-        标准化后的快照行情。
+        Normalized snapshot quote.
     """
     symbol = normalize_symbol(region, code)
     return MarketSnapshot(
@@ -151,16 +152,16 @@ def quote_event_from_payload(
     payload: dict[str, Any],
     source: str = "itick",
 ) -> QuoteEvent:
-    """由原始 quote payload 构造 QuoteEvent。
+    """Build a QuoteEvent from raw quote payload.
 
     Args:
-        region: 市场区域。
-        code: 标的代码。
-        payload: 原始 payload。
-        source: 来源名称。
+        region: Market region.
+        code: Instrument code.
+        payload: Raw payload.
+        source: Source name.
 
     Returns:
-        标准化后的 QuoteEvent。
+        Normalized QuoteEvent.
     """
     snapshot = normalize_quote_payload(region=region, code=code, payload=payload)
     return QuoteEvent(
@@ -186,7 +187,7 @@ def tick_event_from_payload(
     payload: dict[str, Any],
     source: str = "itick",
 ) -> TickEvent:
-    """由原始 tick payload 构造 TickEvent。"""
+    """Build a TickEvent from raw tick payload."""
     return TickEvent(
         event_type=TickEvent.__dataclass_fields__["event_type"].default,  # type: ignore[index]
         symbol=normalize_symbol(region, code),
@@ -206,7 +207,7 @@ def kline_event_from_bar(
     source: str = "itick",
     provisional: bool = False,
 ) -> KlineEvent:
-    """由标准化 K 线记录构造 KlineEvent。"""
+    """Build a KlineEvent from a normalized K-line record."""
     return KlineEvent(
         event_type=KlineEvent.__dataclass_fields__["event_type"].default,  # type: ignore[index]
         symbol=bar.symbol,
@@ -231,7 +232,7 @@ def connection_event(
     detail: str | None = None,
     source: str = "itick",
 ) -> ConnectionEvent:
-    """构造连接状态事件。"""
+    """Build a connection status event."""
     return ConnectionEvent(
         event_type=ConnectionEvent.__dataclass_fields__["event_type"].default,  # type: ignore[index]
         symbol="system",
@@ -242,13 +243,13 @@ def connection_event(
 
 
 def serializable_bar(bar: BarRecord) -> dict[str, Any]:
-    """把标准化 K 线记录转换为可序列化结构。
+    """Convert a normalized K-line record to a serializable structure.
 
     Args:
-        bar: 标准化 K 线记录。
+        bar: Normalized K-line record.
 
     Returns:
-        适合缓存或传输的字典结构。
+        Dictionary suitable for caching or transport.
     """
     payload = asdict(bar)
     payload["bar_time"] = bar.bar_time.isoformat()

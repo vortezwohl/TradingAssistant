@@ -1,9 +1,9 @@
-"""实现 forming bar 与多周期聚合逻辑。
+"""Forming bar and multi-period aggregation logic.
 
-该模块是实时图表主链路的核心：
-1. 根据 tick / quote 更新 forming 1m bar；
-2. 在分钟边界闭合当前 bar；
-3. 从闭合后的 1m bar 聚合高周期 bar。
+This module is the core of the real-time chart pipeline:
+1. Update forming 1m bars from tick/quote events;
+2. Close bars at minute boundaries;
+3. Aggregate closed 1m bars into higher-period bars.
 """
 
 from __future__ import annotations
@@ -28,14 +28,14 @@ SUPPORTED_PERIODS = {
 
 
 def floor_to_minute(dt: datetime, step_minutes: int = 1) -> datetime:
-    """把时间归整到分钟边界。
+    """Floor a datetime to the nearest minute boundary.
 
     Args:
-        dt: 原始时间。
-        step_minutes: 分钟粒度。
+        dt: Original datetime.
+        step_minutes: Minute granularity.
 
     Returns:
-        向下取整后的分钟时间。
+        Floored minute time.
     """
     base = dt.astimezone(timezone.utc).replace(second=0, microsecond=0)
     minute = (base.minute // step_minutes) * step_minutes
@@ -44,7 +44,7 @@ def floor_to_minute(dt: datetime, step_minutes: int = 1) -> datetime:
 
 @dataclass(slots=True)
 class BarAggregator:
-    """维护 forming bar 与 closed bar，并支持高周期聚合。"""
+    """Maintain forming bars and closed bars, and support higher-period aggregation."""
 
     _forming_bars: dict[str, RuntimeBar] = field(default_factory=dict)
     _closed_bars: dict[str, list[RuntimeBar]] = field(
@@ -52,13 +52,13 @@ class BarAggregator:
     )
 
     def update_from_tick(self, event: TickEvent) -> RuntimeBar:
-        """用 TickEvent 更新 forming 1m bar。
+        """Update forming 1m bar from a TickEvent.
 
         Args:
-            event: Tick 事件。
+            event: Tick event.
 
         Returns:
-            更新后的 forming 1m bar。
+            Updated forming 1m bar.
         """
         return self._update_forming_bar(
             symbol=event.symbol,
@@ -69,13 +69,13 @@ class BarAggregator:
         )
 
     def update_from_quote(self, event: QuoteEvent) -> RuntimeBar:
-        """用 QuoteEvent 更新 forming 1m bar。
+        """Update forming 1m bar from a QuoteEvent.
 
         Args:
-            event: Quote 事件。
+            event: Quote event.
 
         Returns:
-            更新后的 forming 1m bar。
+            Updated forming 1m bar.
         """
         return self._update_forming_bar(
             symbol=event.symbol,
@@ -86,13 +86,13 @@ class BarAggregator:
         )
 
     def finalize_due_bars(self, now: datetime) -> list[RuntimeBar]:
-        """闭合所有已经跨过分钟边界的 forming 1m bar。
+        """Close all forming 1m bars that have crossed minute boundaries.
 
         Args:
-            now: 当前时间。
+            now: Current time.
 
         Returns:
-            被闭合的 bar 列表。
+            List of finalized bars.
         """
         finalized: list[RuntimeBar] = []
         current_minute = floor_to_minute(now)
@@ -105,14 +105,14 @@ class BarAggregator:
         return finalized
 
     def aggregate_period(self, symbol: str, period: str) -> list[RuntimeBar]:
-        """把闭合后的 1m bar 聚合为更高周期。
+        """Aggregate closed 1m bars into a higher period.
 
         Args:
-            symbol: 统一 symbol。
-            period: 目标周期。
+            symbol: Normalized symbol.
+            period: Target period.
 
         Returns:
-            聚合后的 bar 列表；若周期为 `1m` 则直接返回闭合 1m bar。
+            Aggregated bar list; returns closed 1m bars directly if period is `1m`.
         """
         if period not in SUPPORTED_PERIODS:
             raise ValueError(f"Unsupported period: {period}")
@@ -128,15 +128,17 @@ class BarAggregator:
             buckets[bucket_time].append(bar)
 
         for bucket_time in sorted(buckets):
-            grouped.append(self._merge_bars(symbol, period, bucket_time, buckets[bucket_time]))
+            grouped.append(
+                self._merge_bars(symbol, period, bucket_time, buckets[bucket_time])
+            )
         return grouped
 
     def forming_bar(self, symbol: str) -> RuntimeBar | None:
-        """返回当前 forming 1m bar。"""
+        """Return the current forming 1m bar."""
         return self._forming_bars.get(symbol)
 
     def closed_bars(self, symbol: str) -> list[RuntimeBar]:
-        """返回闭合后的 1m bar。"""
+        """Return the closed 1m bars."""
         return list(self._closed_bars.get(symbol, []))
 
     def _update_forming_bar(
@@ -148,7 +150,7 @@ class BarAggregator:
         volume_delta: float,
         turnover_delta: float,
     ) -> RuntimeBar:
-        """更新 forming 1m bar 的内部实现。"""
+        """Internal implementation for updating forming 1m bar."""
         bar_time = floor_to_minute(event_time)
         current = self._forming_bars.get(symbol)
         if current is None or current.bar_time != bar_time:
@@ -188,7 +190,7 @@ class BarAggregator:
         bucket_time: datetime,
         bars: list[RuntimeBar],
     ) -> RuntimeBar:
-        """把一组 1m bar 聚合成更高周期 bar。"""
+        """Merge a group of 1m bars into a higher-period bar."""
         bars = sorted(bars, key=lambda item: item.bar_time)
         open_price = bars[0].open_price
         close_price = bars[-1].close_price

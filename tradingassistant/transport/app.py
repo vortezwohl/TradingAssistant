@@ -1,15 +1,16 @@
-﻿"""实现 FastAPI 传输门面与会话级推送编排。
+"""FastAPI transport facade and session-level push orchestration.
 
-该模块负责：
-1. 暴露图表 bootstrap REST 接口；
-2. 通过 TopicBus 与 SubscriptionRegistry 编排 WebSocket 路由；
-3. 把高频运行态数据隔离在传输与服务层，不直接压入 Reflex State。
+This module is responsible for:
+1. Exposing chart bootstrap REST endpoints;
+2. Orchestrating WebSocket routes via TopicBus and SubscriptionRegistry;
+3. Isolating high-frequency runtime data in the transport and service layers,
+   preventing direct writes to Reflex State.
 
-WebSocket 路由实现已提取到独立模块：
-- `ws_chart.py` — 图表增量推送
-- `ws_quote.py` — 列表行情推送
-- `ws_alert.py` — 告警事件推送
-- `ws_helpers.py` — 公共订阅生命周期工具
+WebSocket route implementations have been extracted into separate modules:
+- `ws_chart.py` — Chart increment push
+- `ws_quote.py` — Quote list push
+- `ws_alert.py` — Alert event push
+- `ws_helpers.py` — Shared subscription lifecycle utilities
 """
 
 from __future__ import annotations
@@ -42,7 +43,7 @@ from .ws_quote import handle_quote_stream
 
 
 class MarketMonitorService:
-    """编排历史回填、指标初始化、缓存写入与主题推送。"""
+    """Orchestrate history backfill, indicator initialization, cache writes, and topic push."""
 
     def __init__(
         self,
@@ -54,7 +55,7 @@ class MarketMonitorService:
         indicator_engine: IncrementalIndicatorEngine,
         metrics: RuntimeMetrics | None = None,
     ) -> None:
-        """初始化服务依赖。"""
+        """Initialize service dependencies."""
 
         self.history_service = history_service
         self.cache_store = cache_store
@@ -71,7 +72,7 @@ class MarketMonitorService:
         period: str,
         bars: int,
     ) -> ChartSnapshot:
-        """构造图表 bootstrap 快照。"""
+        """Build a chart bootstrap snapshot."""
 
         symbol = f"{region.upper()}.{code}"
         snapshot_key = chart_snapshot_key(symbol, period)
@@ -103,7 +104,9 @@ class MarketMonitorService:
             for bar in history
         ]
         indicator_key = f"{symbol}:{period}"
-        indicator_snapshot = self.indicator_engine.initialize(indicator_key, runtime_bars)
+        indicator_snapshot = self.indicator_engine.initialize(
+            indicator_key, runtime_bars
+        )
         snapshot = ChartSnapshot(
             topic=chart_topic(symbol, period),
             symbol=symbol,
@@ -125,7 +128,7 @@ class MarketMonitorService:
         event: KlineEvent,
         indicators: dict[str, Any],
     ) -> int:
-        """发布图表增量更新。"""
+        """Publish a chart increment update."""
 
         payload = {
             "topic": chart_topic(event.symbol, event.period),
@@ -147,7 +150,7 @@ class MarketMonitorService:
         return self._publish(payload["topic"], payload)
 
     def publish_quote_update(self, *, event: QuoteEvent) -> int:
-        """发布列表行情增量更新。"""
+        """Publish a quote list increment update."""
 
         payload = {
             "topic": quotes_topic(),
@@ -173,7 +176,7 @@ class MarketMonitorService:
         severity: str = "info",
         name: str = "default",
     ) -> int:
-        """发布告警事件。"""
+        """Publish an alert event."""
 
         payload = {
             "topic": alerts_topic(name),
@@ -186,12 +189,12 @@ class MarketMonitorService:
         return self._publish(payload["topic"], payload)
 
     def runtime_snapshot(self) -> dict[str, Any]:
-        """返回当前运行态快照。"""
+        """Return the current runtime snapshot."""
 
         return self.metrics.snapshot()
 
     def _publish(self, topic: str, payload: dict[str, Any]) -> int:
-        """向主题总线发布并记录指标。"""
+        """Publish to the topic bus and record metrics."""
 
         start = perf_counter()
         subscriber_count = self.topic_bus.publish(topic, payload)
@@ -211,18 +214,19 @@ def create_app(
     topic_bus: TopicBus,
     registry: SubscriptionRegistry,
 ) -> FastAPI:
-    """创建 FastAPI 应用，挂载 REST 和 WebSocket 路由。
+    """Create a FastAPI app with REST and WebSocket routes mounted.
 
-    WebSocket 路由实现已提取到独立模块（ws_chart/ws_quote/ws_alert.py），
-    本函数仅负责装配 app 实例、注册 CORS 和挂载端点。
+    WebSocket route implementations have been extracted to separate modules
+    (ws_chart/ws_quote/ws_alert.py); this function only assembles the app
+    instance, registers CORS, and mounts endpoints.
 
     Args:
-        service: 行情监控服务。
-        topic_bus: 主题总线。
-        registry: 订阅注册表。
+        service: Market monitor service.
+        topic_bus: Topic bus.
+        registry: Subscription registry.
 
     Returns:
-        已完成路由挂载的 FastAPI 应用。
+        Fully assembled FastAPI app.
     """
 
     app = FastAPI(title="TradingAssistant")
@@ -245,7 +249,7 @@ def create_app(
         period: str = "1m",
         bars: int = 240,
     ) -> dict[str, Any]:
-        """返回图表 bootstrap 快照。"""
+        """Return a chart bootstrap snapshot."""
         return service.bootstrap_chart(
             region=region,
             code=code,
@@ -255,12 +259,12 @@ def create_app(
 
     @app.get("/api/runtime/metrics")
     async def runtime_metrics() -> dict[str, Any]:
-        """返回 MEMORY 路线的最小运行态指标。"""
+        """Return minimal runtime metrics for the MEMORY path."""
         return service.runtime_snapshot()
 
     @app.websocket("/ws/chart/{session_id}")
     async def chart_stream(websocket: WebSocket, session_id: str) -> None:
-        """建立图表增量推送连接。"""
+        """Establish a chart increment push connection."""
         await handle_chart_stream(
             websocket=websocket,
             session_id=session_id,
@@ -272,7 +276,7 @@ def create_app(
 
     @app.websocket("/ws/quotes/{session_id}")
     async def quote_stream(websocket: WebSocket, session_id: str) -> None:
-        """建立列表行情推送连接。"""
+        """Establish a quote list push connection."""
         await handle_quote_stream(
             websocket=websocket,
             session_id=session_id,
@@ -284,7 +288,7 @@ def create_app(
 
     @app.websocket("/ws/alerts/{session_id}")
     async def alert_stream(websocket: WebSocket, session_id: str) -> None:
-        """建立告警事件推送连接。"""
+        """Establish an alert event push connection."""
         await handle_alert_stream(
             websocket=websocket,
             session_id=session_id,

@@ -1,36 +1,37 @@
-"""统一定义图表主链路中的 key 与 topic 构造规则。
+"""Unified key and topic construction rules for the chart pipeline.
 
-这些 key 会同时用于缓存、广播与后续 Redis 平滑升级，因此必须保持稳定。
+These keys are used for caching, broadcasting, and future smooth Redis
+upgrade, so they must remain stable.
 """
 
 from __future__ import annotations
 
 
 def chart_topic(symbol: str, period: str) -> str:
-    """生成图表主题标识。"""
+    """Generate chart topic identifier."""
     return f"chart:{symbol}:{period}"
 
 
 def quotes_topic(name: str = "watchlist") -> str:
-    """生成列表行情主题标识。"""
+    """Generate quote list topic identifier."""
     return f"quotes:{name}"
 
 
 def alerts_topic(name: str = "default") -> str:
-    """生成预警主题标识。"""
+    """Generate alert topic identifier."""
     return f"alerts:{name}"
 
 
 def chart_snapshot_key(symbol: str, period: str) -> str:
-    """生成图表快照缓存键。"""
+    """Generate chart snapshot cache key."""
     return f"snapshot:{chart_topic(symbol, period)}"
 
 
 def bar_history_key(symbol: str, period: str, limit: int) -> str:
-    """生成历史 K 线缓存键。"""
+    """Generate historical K-line cache key."""
     return f"history:{symbol}:{period}:{limit}"
 
 
 def indicator_snapshot_key(symbol: str, period: str) -> str:
-    """生成指标快照缓存键。"""
+    """Generate indicator snapshot cache key."""
     return f"indicator:{symbol}:{period}"

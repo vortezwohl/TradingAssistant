@@ -1,4 +1,4 @@
-"""提供默认 ASGI 入口和本地双进程启动器。"""
+"""Default ASGI entry point and local dual-process launcher for development."""
 
 from __future__ import annotations
 
@@ -24,7 +24,7 @@ app = create_default_app()
 
 
 def _resolve_reflex_executable() -> str:
-    """返回当前可用的 Reflex 可执行文件。"""
+    """Return the currently available Reflex executable path."""
     script_dir = Path(sys.executable).resolve().parent
     candidates = [
         script_dir / "reflex.exe",
@@ -39,7 +39,7 @@ def _resolve_reflex_executable() -> str:
 
 
 def _build_backend_command() -> list[str]:
-    """构造业务 FastAPI 门面的启动命令。"""
+    """Build the startup command for the FastAPI backend facade."""
     return [
         sys.executable,
         "-m",
@@ -53,19 +53,19 @@ def _build_backend_command() -> list[str]:
 
 
 def _build_frontend_command() -> list[str]:
-    """构造 Reflex 前端开发服务器的启动命令。"""
+    """Build the startup command for the Reflex frontend dev server."""
     return [_resolve_reflex_executable(), "run"]
 
 
 def _build_frontend_env() -> dict[str, str]:
-    """为 Reflex 前端注入统一的 API 基地址。"""
+    """Inject the unified API base URL into the Reflex frontend environment."""
     env = os.environ.copy()
     env["TRADINGASSISTANT_API_BASE_URL"] = API_BASE_URL
     return env
 
 
 def _terminate_process_tree(process: subprocess.Popen | None) -> None:
-    """按进程树回收子进程。"""
+    """Terminate the entire child process tree."""
     if process is None or process.poll() is not None:
         return
 
@@ -88,7 +88,7 @@ def _terminate_process_tree(process: subprocess.Popen | None) -> None:
 
 
 def _run_dev_stack() -> int:
-    """同时启动业务后端与 Reflex 前端。"""
+    """Launch both the backend service and the Reflex frontend simultaneously."""
     backend_process = None
     frontend_process = None
     try:

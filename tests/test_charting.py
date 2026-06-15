@@ -1,9 +1,9 @@
-"""验证历史回填与 K 线聚合主链路。
+"""Verify history backfill and K-line aggregation main pipeline.
 
-该文件覆盖：
-1. MemoryCacheStore 命中优先的历史回填；
-2. forming / closed 1m bar；
-3. 从 1m 聚合高周期 bar。
+This file covers:
+1. Cache-hit-prioritized history backfill with MemoryCacheStore;
+2. Forming / closed 1m bars;
+3. Aggregating 1m bars into higher-period bars.
 """
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ from tradingassistant.market_data.contracts import BarRecord
 
 
 class FakeHistoryGateway:
-    """用于测试历史回填的伪 gateway。"""
+    """Fake gateway for testing history backfill."""
 
     def __init__(self) -> None:
         self.calls = 0
@@ -52,10 +52,10 @@ class FakeHistoryGateway:
 
 
 class HistoryBackfillServiceTests(unittest.TestCase):
-    """验证历史回填服务。"""
+    """Test history backfill service."""
 
     def test_cache_is_used_before_gateway(self) -> None:
-        """相同请求的第二次调用应命中缓存。"""
+        """A second call with the same request should hit the cache."""
         gateway = FakeHistoryGateway()
         cache = MemoryCacheStore()
         service = HistoryBackfillService(gateway=gateway, cache_store=cache)
@@ -67,10 +67,10 @@ class HistoryBackfillServiceTests(unittest.TestCase):
 
 
 class BarAggregatorTests(unittest.TestCase):
-    """验证 forming / closed bar 与聚合逻辑。"""
+    """Test forming/closed bar and aggregation logic."""
 
     def test_tick_updates_forming_bar(self) -> None:
-        """tick 应更新 forming 1m bar 的价格与成交量。"""
+        """Tick should update forming 1m bar price and volume."""
         aggregator = BarAggregator()
         event = TickEvent(
             event_type=None,  # type: ignore[arg-type]
@@ -87,7 +87,7 @@ class BarAggregatorTests(unittest.TestCase):
         self.assertEqual(bar.volume, 100.0)
 
     def test_quote_updates_same_forming_bar(self) -> None:
-        """同一分钟内 quote 应更新同一根 forming bar。"""
+        """Quote in the same minute should update the same forming bar."""
         aggregator = BarAggregator()
         aggregator.update_from_tick(
             TickEvent(
@@ -113,7 +113,7 @@ class BarAggregatorTests(unittest.TestCase):
         self.assertEqual(bar.high_price, 501.2)
 
     def test_finalize_due_bars_closes_old_minute(self) -> None:
-        """跨分钟后应闭合上一根 bar。"""
+        """Bars should be closed when crossing minute boundary."""
         aggregator = BarAggregator()
         aggregator.update_from_tick(
             TickEvent(
@@ -133,7 +133,7 @@ class BarAggregatorTests(unittest.TestCase):
         self.assertFalse(finalized[0].provisional)
 
     def test_aggregate_period_groups_closed_bars(self) -> None:
-        """闭合后的 1m bar 应能聚合为 5m。"""
+        """Closed 1m bars should aggregate into 5m bars."""
         aggregator = BarAggregator()
         base_time = datetime(2026, 6, 7, 9, 30, tzinfo=timezone.utc)
         for index in range(5):

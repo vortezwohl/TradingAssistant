@@ -1,7 +1,8 @@
-"""实现图表历史回填服务。
+"""Chart history backfill service.
 
-该模块负责优先命中 `MemoryCacheStore`，未命中时回源 iTick REST，
-并把结果转换为后续 K 线聚合与图表 bootstrap 可以直接使用的稳定结构。
+This module prioritizes `MemoryCacheStore` hits, falls back to iTick REST
+on miss, and converts results into stable structures usable by downstream
+K-line aggregation and chart bootstrap.
 """
 
 from __future__ import annotations
@@ -17,7 +18,7 @@ from .keys import bar_history_key
 
 @dataclass(slots=True)
 class HistoryBackfillService:
-    """封装历史回填逻辑。"""
+    """Encapsulate history backfill logic."""
 
     gateway: ITickMarketGateway
     cache_store: CacheStore
@@ -32,18 +33,18 @@ class HistoryBackfillService:
         end: str | None = None,
         ttl_seconds: int = 30,
     ) -> list[BarRecord]:
-        """获取标准化历史 K 线。
+        """Retrieve normalized historical K-lines.
 
         Args:
-            region: 市场区域。
-            code: 标的代码。
-            period: 图表周期。
-            limit: 最大条数。
-            end: 截止时间。
-            ttl_seconds: 缓存生存时间。
+            region: Market region.
+            code: Instrument code.
+            period: Chart period.
+            limit: Maximum bar count.
+            end: End time.
+            ttl_seconds: Cache TTL in seconds.
 
         Returns:
-            标准化后的历史 K 线列表。
+            List of normalized historical bar records.
         """
         cache_key = bar_history_key(f"{region.upper()}.{code}", period, limit)
         cached = self.cache_store.get(cache_key)

@@ -1,8 +1,9 @@
-"""验证市场数据接入层与标准化逻辑。
+"""Verify market data access layer and normalization logic.
 
-该文件聚焦：
-1. 原始 payload 到标准化契约 / 领域事件的转换；
-2. iTick gateway 对 REST 查询、WebSocket 消息和错误事件的封装行为。
+This file focuses on:
+1. Conversion of raw payloads to normalized contracts / domain events;
+2. iTick gateway encapsulation behavior for REST queries, WebSocket
+   messages, and error events.
 """
 
 from __future__ import annotations
@@ -26,14 +27,14 @@ from tradingassistant.market_data.normalizer import (
 
 
 class NormalizerTests(unittest.TestCase):
-    """验证标准化转换逻辑。"""
+    """Test normalization logic."""
 
     def test_normalize_symbol_formats_region_and_code(self) -> None:
-        """symbol 应标准化为 REGION.CODE。"""
+        """symbol should normalize to REGION.CODE."""
         self.assertEqual(normalize_symbol("hk", "00700"), "HK.00700")
 
     def test_normalize_history_bar_maps_ohlcv_fields(self) -> None:
-        """历史 K 线字段应被正确提取。"""
+        """Historical K-line fields should be correctly extracted."""
         bar = normalize_history_bar(
             region="HK",
             code="00700",
@@ -55,7 +56,7 @@ class NormalizerTests(unittest.TestCase):
         self.assertEqual(bar.volume, 1000.0)
 
     def test_quote_event_from_payload_creates_domain_event(self) -> None:
-        """quote payload 应被转换为 QuoteEvent。"""
+        """Quote payload should be converted to QuoteEvent."""
         event = quote_event_from_payload(
             region="US",
             code="AAPL",
@@ -75,7 +76,7 @@ class NormalizerTests(unittest.TestCase):
         self.assertEqual(event.prev_close, 198.6)
 
     def test_tick_event_from_payload_creates_domain_event(self) -> None:
-        """tick payload 应被转换为 TickEvent。"""
+        """Tick payload should be converted to TickEvent."""
         event = tick_event_from_payload(
             region="HK",
             code="00700",
@@ -92,7 +93,7 @@ class NormalizerTests(unittest.TestCase):
         self.assertEqual(event.direction, "buy")
 
     def test_kline_event_from_bar_marks_provisional_flag(self) -> None:
-        """KlineEvent 应沿用 bar 信息并设置 provisional。"""
+        """KlineEvent should carry bar info and set provisional flag."""
         bar = normalize_history_bar(
             region="HK",
             code="00700",
@@ -111,7 +112,7 @@ class NormalizerTests(unittest.TestCase):
         self.assertTrue(event.provisional)
 
     def test_connection_event_wraps_state(self) -> None:
-        """连接状态事件应保留状态与说明。"""
+        """Connection status event should preserve state and detail."""
         event = connection_event(
             state=ConnectionState.RECONNECTING,
             detail="retrying",
@@ -120,7 +121,7 @@ class NormalizerTests(unittest.TestCase):
         self.assertEqual(event.detail, "retrying")
 
     def test_normalize_quote_payload_maps_fields(self) -> None:
-        """原始快照应被映射成统一结构。"""
+        """Raw snapshot should be mapped to unified structure."""
         snapshot = normalize_quote_payload(
             region="HK",
             code="00700",
@@ -141,17 +142,17 @@ class NormalizerTests(unittest.TestCase):
 
 
 class FakeITickClient:
-    """用于测试 gateway 的伪 iTick client。"""
+    """Fake iTick client for gateway testing."""
 
     def __init__(self, token: str) -> None:
         self.token = token
         self.message_handler = None
         self.error_handler = None
-        self.sent_messages: list[str] = []
         self.connected = False
+        self.sent_messages: list[str] = []
 
     def get_symbol_list(self) -> list[dict[str, str]]:
-        """返回伪造 symbol 列表。"""
+        """Return fake symbol list."""
         return [{"region": "HK", "code": "00700"}]
 
     def get_stock_kline(
@@ -162,65 +163,67 @@ class FakeITickClient:
         limit: int,
         end: str | None = None,
     ) -> list[dict[str, str]]:
-        """返回伪造历史 K 线。"""
-        return [{
-            "t": 1710000000,
-            "o": "500",
-            "h": "505",
-            "l": "498",
-            "c": "503",
-            "v": "1000",
-            "tu": "503000",
-        }]
+        """Return fake historical K-lines."""
+        return [
+            {
+                "t": 1710000000,
+                "o": "500",
+                "h": "505",
+                "l": "498",
+                "c": "503",
+                "v": "1000",
+                "tu": "503000",
+            }
+        ]
 
     def set_message_handler(self, handler) -> None:
-        """记录消息处理回调。"""
+        """Record message handler callback."""
         self.message_handler = handler
 
     def set_error_handler(self, handler) -> None:
-        """记录错误处理回调。"""
+        """Record error handler callback."""
         self.error_handler = handler
 
     def connect_stock_websocket(self) -> None:
-        """标记为已连接。"""
+        """Mark as connected."""
         self.connected = True
 
     def send_websocket_message(self, message: str) -> None:
-        """记录发送内容。"""
+        """Record sent content."""
         self.sent_messages.append(message)
 
     def close_websocket(self) -> None:
-        """标记关闭连接。"""
+        """Mark connection as closed."""
         self.connected = False
 
 
 class BrokenITickClient(FakeITickClient):
-    """用于测试错误分支的伪 client。"""
+    """Fake client for testing error paths."""
 
     def get_symbol_list(self) -> list[dict[str, str]]:
-        """抛出异常。"""
+        """Raise an exception."""
         raise RuntimeError("boom")
 
 
 class ITickMarketGatewayTests(unittest.TestCase):
-    """验证 iTick 接入层。"""
+    """Test iTick access layer."""
 
     @patch("tradingassistant.market_data.gateway.ITickClient", FakeITickClient)
     def test_list_symbols_returns_data(self) -> None:
-        """symbol 查询应返回上游数据。"""
+        """Symbol query should return upstream data."""
         gateway = ITickMarketGateway("demo-token")
         self.assertEqual(gateway.list_symbols(), [{"region": "HK", "code": "00700"}])
 
     @patch("tradingassistant.market_data.gateway.ITickClient", BrokenITickClient)
     def test_list_symbols_wraps_upstream_error(self) -> None:
-        """上游异常应被包装为统一错误。"""
+        """Upstream exception should be wrapped as unified error."""
         gateway = ITickMarketGateway("demo-token")
         with self.assertRaises(ITickGatewayError):
             gateway.list_symbols()
 
     @patch("tradingassistant.market_data.gateway.ITickClient", FakeITickClient)
     def test_get_stock_history_returns_normalized_bars(self) -> None:
-        """历史 K 线应被标准化输出。"""
+        """Historical K-lines should be output in normalized form."""
         gateway = ITickMarketGateway("demo-token")
         bars = gateway.get_stock_history(
             region="HK",
@@ -234,7 +237,7 @@ class ITickMarketGatewayTests(unittest.TestCase):
 
     @patch("tradingassistant.market_data.gateway.ITickClient", FakeITickClient)
     def test_connect_stock_stream_emits_connection_events(self) -> None:
-        """连接股票流时应发出 connecting 和 connected 状态。"""
+        """Should emit connecting and connected states when connecting stock stream."""
         events = []
         gateway = ITickMarketGateway("demo-token")
         gateway.set_connection_handler(events.append)
@@ -244,7 +247,7 @@ class ITickMarketGatewayTests(unittest.TestCase):
 
     @patch("tradingassistant.market_data.gateway.ITickClient", FakeITickClient)
     def test_subscribe_serializes_request(self) -> None:
-        """订阅消息应被序列化后发送。"""
+        """Subscription message should be serialized before sending."""
         gateway = ITickMarketGateway("demo-token")
         gateway.subscribe(
             SubscriptionRequest(
@@ -259,7 +262,7 @@ class ITickMarketGatewayTests(unittest.TestCase):
 
     @patch("tradingassistant.market_data.gateway.ITickClient", FakeITickClient)
     def test_handle_message_decodes_json_before_callback(self) -> None:
-        """消息回调应收到解码后的字典。"""
+        """Message callback should receive decoded dict."""
         received = []
         gateway = ITickMarketGateway("demo-token")
         gateway.set_message_handler(received.append)
@@ -268,7 +271,7 @@ class ITickMarketGatewayTests(unittest.TestCase):
 
     @patch("tradingassistant.market_data.gateway.ITickClient", FakeITickClient)
     def test_handle_error_emits_connection_error_event(self) -> None:
-        """错误回调应转换为连接状态事件。"""
+        """Error callback should be converted to connection status event."""
         received = []
         gateway = ITickMarketGateway("demo-token")
         gateway.set_connection_handler(received.append)

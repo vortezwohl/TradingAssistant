@@ -1,4 +1,4 @@
-"""验证 FastAPI 传输门面与会话订阅逻辑。"""
+"""Verify FastAPI transport facade and session subscription logic."""
 
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ from tradingassistant.transport.app import MarketMonitorService, create_app
 
 
 class FakeGateway:
-    """为传输层测试提供最小历史回填能力。"""
+    """Provide minimal history backfill capability for transport layer tests."""
 
     def get_stock_history(
         self,
@@ -52,17 +52,17 @@ class FakeGateway:
 
 
 class HistoryGatewayAdapter(FakeGateway):
-    """把 RuntimeBar 结果适配给 HistoryBackfillService。"""
+    """Adapt RuntimeBar results for HistoryBackfillService."""
 
     def get_stock_history(self, **kwargs):
         return super().get_stock_history(**kwargs)
 
 
 class TransportAppTests(unittest.TestCase):
-    """验证传输门面。"""
+    """Test transport facade."""
 
     def setUp(self) -> None:
-        """准备测试应用。"""
+        """Prepare test application."""
         self.cache = MemoryCacheStore()
         self.topic_bus = InMemoryTopicBus()
         self.registry = InMemorySubscriptionRegistry()
@@ -89,7 +89,7 @@ class TransportAppTests(unittest.TestCase):
         )
 
     def test_bootstrap_endpoint_returns_snapshot(self) -> None:
-        """bootstrap REST 应返回图表快照。"""
+        """bootstrap REST should return chart snapshot."""
         response = self.client.get(
             "/api/chart/bootstrap",
             params={"region": "HK", "code": "00700", "period": "1m", "bars": 3},
@@ -101,7 +101,7 @@ class TransportAppTests(unittest.TestCase):
         self.assertEqual(len(payload["bars"]), 3)
 
     def test_bootstrap_endpoint_allows_frontend_origin(self) -> None:
-        """bootstrap REST 应允许 Reflex 前端跨域访问。"""
+        """bootstrap REST should allow Reflex frontend cross-origin access."""
         response = self.client.get(
             "/api/chart/bootstrap",
             params={"region": "HK", "code": "00700", "period": "1m", "bars": 3},
@@ -112,8 +112,9 @@ class TransportAppTests(unittest.TestCase):
             response.headers.get("access-control-allow-origin"),
             "http://127.0.0.1:3000",
         )
+
     def test_runtime_metrics_endpoint_returns_observability_snapshot(self) -> None:
-        """运行态指标接口应暴露最小观测信息。"""
+        """Runtime metrics endpoint should expose minimal observability data."""
         self.client.get(
             "/api/chart/bootstrap",
             params={"region": "HK", "code": "00700", "period": "1m", "bars": 2},
@@ -125,7 +126,7 @@ class TransportAppTests(unittest.TestCase):
         self.assertGreaterEqual(payload["cache_misses"], 1)
 
     def test_chart_websocket_receives_published_update(self) -> None:
-        """图表 WS 订阅后应能收到发布的 bar 更新。"""
+        """Chart WS should receive published bar updates after subscription."""
         with self.client.websocket_connect("/ws/chart/session-a") as websocket:
             websocket.send_text(json.dumps({"symbol": "HK.00700", "period": "1m"}))
             ack = websocket.receive_json()
@@ -134,27 +135,24 @@ class TransportAppTests(unittest.TestCase):
                 event_type=None,  # type: ignore[arg-type]
                 symbol="HK.00700",
                 source="itick",
-                event_time=datetime(2026, 6, 7, 9, 40, tzinfo=timezone.utc),
+                event_time=datetime(2026, 6, 7, 9, 41, tzinfo=timezone.utc),
                 period="1m",
-                open_price=500.0,
-                high_price=501.0,
-                low_price=499.0,
-                close_price=500.5,
-                volume=1000.0,
-                turnover=500000.0,
-                bar_time=datetime(2026, 6, 7, 9, 40, tzinfo=timezone.utc),
+                open_price=501.0,
+                high_price=502.0,
+                low_price=500.5,
+                close_price=501.5,
+                volume=1001.0,
+                turnover=501500.0,
+                bar_time=datetime(2026, 6, 7, 9, 41, tzinfo=timezone.utc),
                 provisional=False,
             )
-            self.service.publish_chart_update(
-                event=event,
-                indicators={"ma5": 500.1},
-            )
+            self.service.publish_chart_update(event=event, indicators={"ma5": 500.4})
             payload = websocket.receive_json()
             self.assertEqual(payload["topic"], "chart:HK.00700:1m")
             self.assertEqual(payload["payload_type"], "bar_update")
 
     def test_quote_websocket_receives_published_update(self) -> None:
-        """列表行情 WS 订阅后应能收到 quote 更新。"""
+        """Quote list WS should receive quote updates after subscription."""
         with self.client.websocket_connect("/ws/quotes/session-b") as websocket:
             websocket.send_text('{"action":"subscribe","name":"watchlist"}')
             ack = websocket.receive_json()
@@ -168,13 +166,13 @@ class TransportAppTests(unittest.TestCase):
                 volume=1000.0,
                 turnover=500000.0,
             )
-            self.service.publish_quote_update(event)
+            self.service.publish_quote_update(event=event)
             payload = websocket.receive_json()
             self.assertEqual(payload["topic"], "quotes:watchlist")
             self.assertEqual(payload["symbol"], "HK.00700")
 
     def test_alert_websocket_receives_published_update(self) -> None:
-        """告警 WS 订阅后应能收到告警事件。"""
+        """Alert WS should receive alert events after subscription."""
         with self.client.websocket_connect("/ws/alerts/session-alert") as websocket:
             websocket.send_text('{"action":"subscribe","name":"default"}')
             ack = websocket.receive_json()
@@ -183,15 +181,15 @@ class TransportAppTests(unittest.TestCase):
                 symbol="HK.00700",
                 alert_type="indicator_cross",
                 message="MA5 crossed above MA20",
-                level="warning",
+                severity="warning",
             )
             payload = websocket.receive_json()
             self.assertEqual(payload["topic"], "alerts:default")
-            self.assertEqual(payload["payload_type"], "alert_event")
-            self.assertEqual(payload["level"], "warning")
+            self.assertEqual(payload["payload_type"], "alert")
+            self.assertEqual(payload["severity"], "warning")
 
     def test_unsubscribe_releases_topic_registration(self) -> None:
-        """显式退订后应释放会话到主题的注册关系。"""
+        """Explicit unsubscription should release session-to-topic registration."""
         with self.client.websocket_connect("/ws/chart/session-unsub") as websocket:
             websocket.send_text(json.dumps({"symbol": "HK.00700", "period": "1m"}))
             subscribe_ack = websocket.receive_json()
@@ -221,34 +219,34 @@ class TransportAppTests(unittest.TestCase):
             )
 
     def test_two_chart_sessions_receive_shared_broadcast(self) -> None:
-        """两个图表会话订阅同一 topic 时都应收到更新。"""
+        """Two chart sessions sharing same topic should both receive updates."""
         with (
             self.client.websocket_connect("/ws/chart/session-c1") as ws_one,
             self.client.websocket_connect("/ws/chart/session-c2") as ws_two,
         ):
-                subscribe_payload = json.dumps({"symbol": "HK.00700", "period": "1m"})
-                ws_one.send_text(subscribe_payload)
-                ws_two.send_text(subscribe_payload)
-                self.assertEqual(ws_one.receive_json()["payload_type"], "subscription_ack")
-                self.assertEqual(ws_two.receive_json()["payload_type"], "subscription_ack")
-                event = KlineEvent(
-                    event_type=None,  # type: ignore[arg-type]
-                    symbol="HK.00700",
-                    source="itick",
-                    event_time=datetime(2026, 6, 7, 9, 41, tzinfo=timezone.utc),
-                    period="1m",
-                    open_price=501.0,
-                    high_price=502.0,
-                    low_price=500.5,
-                    close_price=501.5,
-                    volume=1001.0,
-                    turnover=501500.0,
-                    bar_time=datetime(2026, 6, 7, 9, 41, tzinfo=timezone.utc),
-                    provisional=False,
-                )
-                self.service.publish_chart_update(event=event, indicators={"ma5": 500.4})
-                self.assertEqual(ws_one.receive_json()["topic"], "chart:HK.00700:1m")
-                self.assertEqual(ws_two.receive_json()["topic"], "chart:HK.00700:1m")
+            subscribe_payload = json.dumps({"symbol": "HK.00700", "period": "1m"})
+            ws_one.send_text(subscribe_payload)
+            ws_two.send_text(subscribe_payload)
+            self.assertEqual(ws_one.receive_json()["payload_type"], "subscription_ack")
+            self.assertEqual(ws_two.receive_json()["payload_type"], "subscription_ack")
+            event = KlineEvent(
+                event_type=None,  # type: ignore[arg-type]
+                symbol="HK.00700",
+                source="itick",
+                event_time=datetime(2026, 6, 7, 9, 41, tzinfo=timezone.utc),
+                period="1m",
+                open_price=501.0,
+                high_price=502.0,
+                low_price=500.5,
+                close_price=501.5,
+                volume=1001.0,
+                turnover=501500.0,
+                bar_time=datetime(2026, 6, 7, 9, 41, tzinfo=timezone.utc),
+                provisional=False,
+            )
+            self.service.publish_chart_update(event=event, indicators={"ma5": 500.4})
+            self.assertEqual(ws_one.receive_json()["topic"], "chart:HK.00700:1m")
+            self.assertEqual(ws_two.receive_json()["topic"], "chart:HK.00700:1m")
 
 
 if __name__ == "__main__":

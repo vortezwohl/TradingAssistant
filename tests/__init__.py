@@ -1,6 +1,7 @@
-"""测试包入口。
+"""Test package entry.
 
-当前项目尚未引入 pytest，因此第一阶段使用标准库 `unittest`
-覆盖基础抽象与默认内存实现，保证在不增加额外依赖的前提下建立
-最小验证闭环。
+This project has not yet adopted pytest, so the first phase uses the standard
+library `unittest` to cover basic abstractions and default memory
+implementations, establishing a minimal verification loop without adding
+extra dependencies.
 """

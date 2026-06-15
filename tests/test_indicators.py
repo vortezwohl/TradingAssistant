@@ -1,4 +1,4 @@
-"""验证指标引擎的初始化、增量更新与一致性比对。"""
+"""Verify indicator engine initialization, incremental updates, and consistency comparison."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from tradingassistant.indicators.engine import IncrementalIndicatorEngine
 
 
 def build_bars(count: int = 30) -> list[RuntimeBar]:
-    """构造一组测试用 K 线。"""
+    """Build a set of test K-lines."""
     base_time = datetime(2026, 6, 7, 9, 30, tzinfo=timezone.utc)
     bars = []
     for index in range(count):
@@ -33,10 +33,10 @@ def build_bars(count: int = 30) -> list[RuntimeBar]:
 
 
 class IncrementalIndicatorEngineTests(unittest.TestCase):
-    """验证增量指标引擎。"""
+    """Test incremental indicator engine."""
 
     def test_initialize_returns_basic_snapshot(self) -> None:
-        """初始化后应返回基础指标快照。"""
+        """Should return basic indicator snapshot after initialization."""
         engine = IncrementalIndicatorEngine()
         snapshot = engine.initialize("HK.00700:1m", build_bars())
         self.assertIn("ma5", snapshot.values)
@@ -44,7 +44,7 @@ class IncrementalIndicatorEngineTests(unittest.TestCase):
         self.assertFalse(snapshot.provisional)
 
     def test_update_marks_provisional_flag(self) -> None:
-        """增量更新应保留 provisional 标记。"""
+        """Incremental update should preserve the provisional flag."""
         engine = IncrementalIndicatorEngine()
         bars = build_bars()
         engine.initialize("HK.00700:1m", bars)
@@ -65,7 +65,7 @@ class IncrementalIndicatorEngineTests(unittest.TestCase):
         self.assertIn("boll_upper", snapshot.values)
 
     def test_compare_with_reference_returns_small_deltas(self) -> None:
-        """与 OpenTrade 参考结果的差异应可计算。"""
+        """Deltas with OpenTrade reference results should be computable."""
         engine = IncrementalIndicatorEngine()
         bars = build_bars()
         snapshot = engine.initialize("HK.00700:1m", bars)

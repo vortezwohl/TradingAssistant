@@ -1,8 +1,10 @@
-"""定义主题广播抽象与进程内实现。
+"""Topic broadcast abstraction and in-process implementation.
 
-主题广播用于把图表增量、行情列表更新和预警事件从处理器层分发给订阅方。
-当前实现仅提供进程内广播，但调用方必须通过 `TopicBus` 抽象交互，
-为未来 Redis Pub/Sub 或其他跨进程总线预留替换空间。
+Topic broadcast distributes chart increments, quote list updates, and alert
+events from the handler layer to subscribers. The current implementation
+only supports in-process broadcast, but callers must interact through the
+`TopicBus` abstraction to reserve replacement space for future Redis Pub/Sub
+or other cross-process buses.
 """
 
 from __future__ import annotations
@@ -18,11 +20,11 @@ Subscriber = Callable[[str, Any], None]
 
 @dataclass(slots=True, frozen=True)
 class SubscriptionHandle:
-    """描述主题订阅句柄。
+    """Describe a topic subscription handle.
 
     Args:
-        topic: 订阅主题。
-        subscriber_id: 订阅者唯一标识。
+        topic: Subscription topic.
+        subscriber_id: Unique subscriber identifier.
     """
 
     topic: str
@@ -30,7 +32,7 @@ class SubscriptionHandle:
 
 
 class TopicBus(ABC):
-    """定义主题广播统一接口。"""
+    """Define unified topic broadcast interface."""
 
     @abstractmethod
     def subscribe(
@@ -39,30 +41,30 @@ class TopicBus(ABC):
         subscriber_id: str,
         callback: Subscriber,
     ) -> SubscriptionHandle:
-        """注册主题订阅。"""
+        """Register a topic subscription."""
 
     @abstractmethod
     def unsubscribe(self, handle: SubscriptionHandle) -> None:
-        """取消主题订阅。"""
+        """Cancel a topic subscription."""
 
     @abstractmethod
     def publish(self, topic: str, payload: Any) -> int:
-        """向主题发布消息并返回命中的订阅者数量。"""
+        """Publish a message to a topic and return the number of subscribers reached."""
 
     @abstractmethod
     def subscriber_count(self, topic: str) -> int:
-        """返回某个主题的订阅数量。"""
+        """Return the subscriber count for a topic."""
 
     @abstractmethod
     def clear(self) -> None:
-        """清空所有订阅。"""
+        """Clear all subscriptions."""
 
 
 class InMemoryTopicBus(TopicBus):
-    """基于进程内回调的主题广播实现。"""
+    """In-process callback-based topic broadcast implementation."""
 
     def __init__(self) -> None:
-        """初始化进程内主题总线。"""
+        """Initialize the in-process topic bus."""
         self._topics: dict[str, dict[str, Subscriber]] = defaultdict(dict)
         self._lock = RLock()
 
@@ -72,25 +74,25 @@ class InMemoryTopicBus(TopicBus):
         subscriber_id: str,
         callback: Subscriber,
     ) -> SubscriptionHandle:
-        """注册进程内主题订阅。
+        """Register an in-process topic subscription.
 
         Args:
-            topic: 主题名。
-            subscriber_id: 订阅者标识。
-            callback: 收到消息时的回调函数。
+            topic: Topic name.
+            subscriber_id: Subscriber identifier.
+            callback: Callback function invoked on message receipt.
 
         Returns:
-            订阅句柄。
+            Subscription handle.
         """
         with self._lock:
             self._topics[topic][subscriber_id] = callback
         return SubscriptionHandle(topic=topic, subscriber_id=subscriber_id)
 
     def unsubscribe(self, handle: SubscriptionHandle) -> None:
-        """取消订阅。
+        """Cancel a subscription.
 
         Args:
-            handle: 订阅句柄。
+            handle: Subscription handle.
         """
         with self._lock:
             topic_subscribers = self._topics.get(handle.topic)
@@ -101,14 +103,14 @@ class InMemoryTopicBus(TopicBus):
                 self._topics.pop(handle.topic, None)
 
     def publish(self, topic: str, payload: Any) -> int:
-        """向指定主题广播消息。
+        """Broadcast a message to a topic.
 
         Args:
-            topic: 主题名。
-            payload: 广播内容。
+            topic: Topic name.
+            payload: Broadcast content.
 
         Returns:
-            成功命中的订阅者数量。
+            Number of subscribers reached.
         """
         with self._lock:
             callbacks = list(self._topics.get(topic, {}).items())
@@ -117,27 +119,27 @@ class InMemoryTopicBus(TopicBus):
         return len(callbacks)
 
     def subscriber_count(self, topic: str) -> int:
-        """获取主题订阅数。
+        """Get topic subscriber count.
 
         Args:
-            topic: 主题名。
+            topic: Topic name.
 
         Returns:
-            当前订阅者数量。
+            Current subscriber count.
         """
         with self._lock:
             return len(self._topics.get(topic, {}))
 
     def clear(self) -> None:
-        """清空所有主题订阅。"""
+        """Clear all topic subscriptions."""
         with self._lock:
             self._topics.clear()
 
     def topics(self) -> dict[str, list[str]]:
-        """返回当前主题快照，便于测试或调试。
+        """Return current topic snapshot for testing or debugging.
 
         Returns:
-            每个主题下的订阅者标识列表。
+            Map of topic to subscriber ID list.
         """
         with self._lock:
             return {

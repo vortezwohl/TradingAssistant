@@ -1,9 +1,10 @@
-"""封装 iTick REST 与 WebSocket 接入层。
+"""iTick REST and WebSocket access layer.
 
-该模块负责：
-1. 调用 iTick SDK 完成 REST 查询；
-2. 建立股票 WebSocket 连接并管理消息/错误回调；
-3. 对外只暴露稳定的 Python 接口，不泄漏上游 SDK 的线程与异常细节。
+This module is responsible for:
+1. Calling iTick SDK for REST queries;
+2. Establishing stock WebSocket connections and managing message/error callbacks;
+3. Exposing only stable Python interfaces without leaking upstream SDK thread
+   and exception details.
 """
 
 from __future__ import annotations
@@ -26,46 +27,46 @@ ConnectionHandler = Callable[[ConnectionEvent], None]
 
 
 class ITickGatewayError(RuntimeError):
-    """描述 iTick 接入层统一错误。"""
+    """Describe a unified iTick access layer error."""
 
 
 class ITickMarketGateway:
-    """封装 iTick 的 REST 与 WebSocket 能力。"""
+    """Encapsulate iTick REST and WebSocket capabilities."""
 
     def __init__(self, token: str) -> None:
-        """初始化 iTick 接入层。
+        """Initialize iTick access layer.
 
         Args:
-            token: iTick API token。
+            token: iTick API token.
         """
         self._client = ITickClient(token)
         self._message_handler: MessageHandler | None = None
         self._connection_handler: ConnectionHandler | None = None
 
     def set_message_handler(self, handler: MessageHandler) -> None:
-        """设置标准化前的消息处理函数。
+        """Set the pre-normalization message handler.
 
         Args:
-            handler: 接收原始消息字典的回调。
+            handler: Callback that receives raw message dicts.
         """
         self._message_handler = handler
 
     def set_connection_handler(self, handler: ConnectionHandler) -> None:
-        """设置连接状态事件处理函数。
+        """Set the connection status event handler.
 
         Args:
-            handler: 接收连接状态事件的回调。
+            handler: Callback that receives connection status events.
         """
         self._connection_handler = handler
 
     def list_symbols(self) -> list[dict[str, Any]]:
-        """获取 symbol 列表。
+        """Get symbol list.
 
         Returns:
-            原始 symbol 列表结构。
+            Raw symbol list structure.
 
         Raises:
-            ITickGatewayError: 当上游请求失败时抛出。
+            ITickGatewayError: Raised when upstream request fails.
         """
         try:
             data = self._client.get_symbol_list()
@@ -82,25 +83,27 @@ class ITickMarketGateway:
         limit: int,
         end: str | None = None,
     ) -> list[BarRecord]:
-        """获取并标准化股票历史 K 线。
+        """Retrieve and normalize historical stock K-lines.
 
         Args:
-            region: 市场区域。
-            code: 标的代码。
-            period: 周期。
-            limit: 最大记录数。
-            end: 截止时间。
+            region: Market region.
+            code: Instrument code.
+            period: Period.
+            limit: Maximum record count.
+            end: End time.
 
         Returns:
-            标准化后的 K 线列表。
+            List of normalized K-line records.
 
         Raises:
-            ITickGatewayError: 当上游请求失败时抛出。
+            ITickGatewayError: Raised when upstream request fails.
         """
         try:
             rows = self._client.get_stock_kline(region, code, period, limit, end=end)
         except Exception as exc:  # noqa: BLE001
-            raise ITickGatewayError("Failed to fetch stock history from iTick.") from exc
+            raise ITickGatewayError(
+                "Failed to fetch stock history from iTick."
+            ) from exc
         return [
             normalize_history_bar(
                 region=region,
@@ -112,7 +115,7 @@ class ITickMarketGateway:
         ]
 
     def connect_stock_stream(self) -> None:
-        """连接股票 WebSocket 流并绑定内部回调。"""
+        """Connect the stock WebSocket stream and bind internal callbacks."""
         self._emit_connection(
             connection_event(state=ConnectionState.CONNECTING),
         )
@@ -122,13 +125,13 @@ class ITickMarketGateway:
         self._emit_connection(connection_event(state=ConnectionState.CONNECTED))
 
     def subscribe(self, request: SubscriptionRequest) -> None:
-        """发送订阅消息。
+        """Send a subscription message.
 
         Args:
-            request: 订阅请求。
+            request: Subscription request.
 
         Raises:
-            ITickGatewayError: 当序列化或发送失败时抛出。
+            ITickGatewayError: Raised when serialization or send fails.
         """
         payload = {
             "ac": "subscribe",
@@ -142,15 +145,15 @@ class ITickMarketGateway:
             raise ITickGatewayError("Failed to send subscription to iTick.") from exc
 
     def close(self) -> None:
-        """关闭 WebSocket 连接。"""
+        """Close the WebSocket connection."""
         self._client.close_websocket()
         self._emit_connection(connection_event(state=ConnectionState.CLOSED))
 
     def _handle_message(self, message: str) -> None:
-        """处理上游 WebSocket 文本消息。
+        """Handle upstream WebSocket text messages.
 
         Args:
-            message: 原始文本消息。
+            message: Raw text message.
         """
         if self._message_handler is None:
             return
@@ -161,10 +164,10 @@ class ITickMarketGateway:
         self._message_handler(payload)
 
     def _handle_error(self, error: Exception) -> None:
-        """把上游错误转换为连接状态事件。
+        """Convert upstream errors to connection status events.
 
         Args:
-            error: 原始异常。
+            error: Raw exception.
         """
         self._emit_connection(
             connection_event(
@@ -174,10 +177,10 @@ class ITickMarketGateway:
         )
 
     def _emit_connection(self, event: ConnectionEvent) -> None:
-        """向外发出连接状态事件。
+        """Emit a connection status event.
 
         Args:
-            event: 连接状态事件。
+            event: Connection status event.
         """
         if self._connection_handler is not None:
             self._connection_handler(event)

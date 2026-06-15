@@ -1,12 +1,13 @@
-"""TradingAssistant 项目的核心包入口。
+"""Core package entry for the TradingAssistant project.
 
-该包承载增强版看盘系统的后端实现，定位为：
-1. 通过 iTick 接入行情数据；
-2. 在本地内存中维护运行态缓存、订阅注册与主题广播；
-3. 为后续图表聚合、指标计算和 FastAPI / Reflex 对接提供稳定领域模型与基础抽象。
+This package hosts the backend for the enhanced market monitoring system:
+1. Market data ingestion via iTick;
+2. In-memory runtime cache, subscription registry, and topic broadcast;
+3. Stable domain models and base abstractions for chart aggregation,
+   indicator computation, and FastAPI/Reflex integration.
 
-当前阶段优先建设基础骨架，确保后续能力都可以沿着统一接口扩展，
-并为未来从 MEMORY 平滑升级到 Redis 预留替换点。
+The current phase prioritizes foundational infrastructure with unified interfaces,
+reserving replacement points for a smooth MEMORY-to-Redis upgrade path.
 """
 
 __all__ = [

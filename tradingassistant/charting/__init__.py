@@ -1,5 +1,6 @@
-"""承载图表主链路相关实现。
+"""Chart main pipeline implementations.
 
-该子包未来用于组织历史回填、K 线构建、多周期聚合和图表数据模型。
-当前阶段先建立目录，后续按 OpenSpec 任务逐步补全实现。
+This sub-package organizes history backfill, K-line construction, multi-period
+aggregation, and chart data models. The directory is established now with
+implementations to be completed incrementally per OpenSpec tasks.
 """

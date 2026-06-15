@@ -1,4 +1,4 @@
-"""统一加载 `.env` 并向前后端入口提供共享配置。"""
+"""Load `.env` and provide shared configuration for frontend/backend entry points."""
 
 from __future__ import annotations
 
@@ -15,14 +15,14 @@ load_dotenv(dotenv_path=ENV_FILE, override=False)
 
 
 def _get_env_str(name: str, default: str) -> str:
-    """读取字符串环境变量。
+    """Read a string environment variable.
 
     Args:
-        name: 环境变量名。
-        default: 缺失时使用的默认值。
+        name: Environment variable name.
+        default: Default value when missing.
 
     Returns:
-        去除首尾空白后的配置值。
+        Configuration value with leading/trailing whitespace stripped.
     """
     value = os.getenv(name)
     if value is None:
@@ -32,17 +32,17 @@ def _get_env_str(name: str, default: str) -> str:
 
 
 def _get_env_int(name: str, default: int) -> int:
-    """读取整数环境变量。
+    """Read an integer environment variable.
 
     Args:
-        name: 环境变量名。
-        default: 缺失时使用的默认值。
+        name: Environment variable name.
+        default: Default value when missing.
 
     Returns:
-        转换后的整数值。
+        The converted integer value.
 
     Raises:
-        ValueError: 当环境变量不是合法整数时抛出。
+        ValueError: Raised when the environment variable is not a valid integer.
     """
     value = os.getenv(name)
     if value is None:
@@ -53,18 +53,20 @@ def _get_env_int(name: str, default: int) -> int:
     try:
         return int(stripped)
     except ValueError as exc:
-        raise ValueError(f"环境变量 {name} 必须是整数，当前值为 {value!r}。") from exc
+        raise ValueError(
+            f"Environment variable {name} must be an integer, got {value!r}."
+        ) from exc
 
 
 def _build_http_url(host: str, port: int) -> str:
-    """基于 host 与 port 生成 HTTP 基础地址。
+    """Build an HTTP base URL from host and port.
 
     Args:
-        host: 监听或访问主机。
-        port: 端口。
+        host: Listen or access host.
+        port: Port number.
 
     Returns:
-        去除尾部斜杠的 URL。
+        URL with trailing slash removed.
     """
     return f"http://{host}:{port}".rstrip("/")
 

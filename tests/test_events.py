@@ -1,7 +1,8 @@
-"""验证统一领域事件模型的基础行为。
+"""Verify basic behavior of the unified domain event model.
 
-该文件聚焦基础领域事件类型是否具备稳定默认值和正确事件类别，
-以确保后续接入层与聚合层都能依赖一致的事件契约。
+This file focuses on whether basic domain event types have stable defaults
+and correct event categories, ensuring downstream access and aggregation
+layers can depend on consistent event contracts.
 """
 
 from __future__ import annotations
@@ -21,10 +22,10 @@ from tradingassistant.events import (
 
 
 class MarketEventTests(unittest.TestCase):
-    """验证领域事件模型。"""
+    """Test domain event model."""
 
     def test_tick_event_sets_tick_type(self) -> None:
-        """TickEvent 应固定为 tick 类型。"""
+        """TickEvent should be fixed as tick type."""
         event = TickEvent(
             event_type=MarketEventType.CONNECTION,
             symbol="HK.00700",
@@ -36,7 +37,7 @@ class MarketEventTests(unittest.TestCase):
         self.assertIsInstance(event.received_at, datetime)
 
     def test_quote_event_sets_quote_type(self) -> None:
-        """QuoteEvent 应固定为 quote 类型。"""
+        """QuoteEvent should be fixed as quote type."""
         event = QuoteEvent(
             event_type=MarketEventType.TICK,
             symbol="US.AAPL",
@@ -46,7 +47,7 @@ class MarketEventTests(unittest.TestCase):
         self.assertEqual(event.event_type, MarketEventType.QUOTE)
 
     def test_kline_event_defaults_to_provisional(self) -> None:
-        """KlineEvent 默认应标记为 provisional。"""
+        """KlineEvent should default to provisional."""
         event = KlineEvent(
             event_type=MarketEventType.TICK,
             symbol="HK.00700",
@@ -57,7 +58,7 @@ class MarketEventTests(unittest.TestCase):
         self.assertTrue(event.provisional)
 
     def test_depth_event_sets_depth_type(self) -> None:
-        """DepthEvent 应固定为 depth 类型。"""
+        """DepthEvent should be fixed as depth type."""
         event = DepthEvent(
             event_type=MarketEventType.QUOTE,
             symbol="HK.00700",
@@ -66,7 +67,7 @@ class MarketEventTests(unittest.TestCase):
         self.assertEqual(event.event_type, MarketEventType.DEPTH)
 
     def test_connection_event_sets_connection_type(self) -> None:
-        """ConnectionEvent 应固定为 connection 类型。"""
+        """ConnectionEvent should be fixed as connection type."""
         event = ConnectionEvent(
             event_type=MarketEventType.QUOTE,
             symbol="system",

@@ -98,7 +98,9 @@ class ThemeContractTests(unittest.TestCase):
         scroll_region = scroll_region_style()
         self.assertEqual(shell["height"], "100vh")
         self.assertEqual(shell["overflow"], "hidden")
-        self.assertEqual(workspace["grid_template_columns"], "260px minmax(0, 1fr) 360px")
+        self.assertEqual(
+            workspace["grid_template_columns"], "260px minmax(0, 1fr) 360px"
+        )
         self.assertEqual(workspace["height"], "calc(100vh - 48px)")
         self.assertEqual(workspace["overflow"], "hidden")
         self.assertEqual(scroll_region["overflow_y"], "auto")
@@ -140,7 +142,15 @@ class ChartingContractTests(unittest.TestCase):
             ),
         )
         self.assertEqual(charting.OVERLAY_OPTIONS, ("MA", "EMA", "BOLL", "VWAP"))
-        self.assertEqual(charting.RAIL_TABS, (("analysis", "Analysis"), ("tape", "Tape"), ("signals", "Signals"), ("news", "News")))
+        self.assertEqual(
+            charting.RAIL_TABS,
+            (
+                ("analysis", "Analysis"),
+                ("tape", "Tape"),
+                ("signals", "Signals"),
+                ("news", "News"),
+            ),
+        )
         self.assertEqual(charting.CHART_POINT_COUNT, 72)
 
     def test_charting_helpers_cover_hover_contract_and_microstructure(self) -> None:
@@ -153,7 +163,9 @@ class ChartingContractTests(unittest.TestCase):
         self.assertIn("BOLL U", labels)
         self.assertIn("VWAP", labels)
 
-        hover_details = charting.build_chart_hover_details(model, ["MA", "VWAP"], "orderflow", 5)
+        hover_details = charting.build_chart_hover_details(
+            model, ["MA", "VWAP"], "orderflow", 5
+        )
         self.assertEqual(hover_details["route"], "ORDERFLOW")
         self.assertIn("slot", hover_details)
         self.assertIn("open", hover_details)
@@ -164,7 +176,9 @@ class ChartingContractTests(unittest.TestCase):
         self.assertGreaterEqual(len(overlay_rows), 2)
         self.assertEqual(overlay_rows[0]["label"], "MA5")
 
-        main_svg = charting.build_primary_chart_svg(model, ["MA", "EMA", "BOLL", "VWAP"], "orderflow")
+        main_svg = charting.build_primary_chart_svg(
+            model, ["MA", "EMA", "BOLL", "VWAP"], "orderflow"
+        )
         self.assertIn("<svg", main_svg)
         self.assertIn("path", main_svg)
         self.assertIn("rect", main_svg)
@@ -190,7 +204,9 @@ class ChartingContractTests(unittest.TestCase):
         self.assertEqual(len(book_rows), 10)
         self.assertIn("spread", book_rows[0])
 
-        analysis_cards = charting.build_analysis_cards(model, "main", "30S", ["MA", "VWAP"], "ladder")
+        analysis_cards = charting.build_analysis_cards(
+            model, "main", "30S", ["MA", "VWAP"], "ladder"
+        )
         self.assertEqual(len(analysis_cards), 3)
         self.assertIn("metric_1_label", analysis_cards[0])
         self.assertIn("metric_3_value", analysis_cards[0])

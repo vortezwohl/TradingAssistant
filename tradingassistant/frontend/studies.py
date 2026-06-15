@@ -272,7 +272,9 @@ def _atr(candles: list[dict[str, float]], window: int = 14) -> list[float]:
     for candle in candles:
         high = candle["high"]
         low = candle["low"]
-        true_ranges.append(max(high - low, abs(high - previous_close), abs(low - previous_close)))
+        true_ranges.append(
+            max(high - low, abs(high - previous_close), abs(low - previous_close))
+        )
         previous_close = candle["close"]
     return _moving_average(true_ranges, window)
 
@@ -294,7 +296,9 @@ def _obv(candles: list[dict[str, float]]) -> list[float]:
     return result
 
 
-def _build_route_study_models(active_model: dict[str, Any], route: str) -> list[dict[str, Any]]:
+def _build_route_study_models(
+    active_model: dict[str, Any], route: str
+) -> list[dict[str, Any]]:
     """Build route study definitions with explicit series metadata."""
 
     analytics = active_model["analytics"]
@@ -321,7 +325,12 @@ def _build_route_study_models(active_model: dict[str, Any], route: str) -> list[
                 "name": "Signal Delta",
                 "tag": "Trigger",
                 "foot": ["Line minus signal", "Timing pressure"],
-                "series": [line - signal for line, signal in zip(analytics["macd_line"], analytics["macd_signal"], strict=True)],
+                "series": [
+                    line - signal
+                    for line, signal in zip(
+                        analytics["macd_line"], analytics["macd_signal"], strict=True
+                    )
+                ],
                 "tone": "green",
                 "histogram": False,
             },
@@ -332,7 +341,12 @@ def _build_route_study_models(active_model: dict[str, Any], route: str) -> list[
                 "name": "MA20 - MA60",
                 "tag": "Slope",
                 "foot": ["Trend spread", "Medium-term bias"],
-                "series": [fast - slow for fast, slow in zip(analytics["ma20"], analytics["ma60"], strict=True)],
+                "series": [
+                    fast - slow
+                    for fast, slow in zip(
+                        analytics["ma20"], analytics["ma60"], strict=True
+                    )
+                ],
                 "tone": "amber",
                 "histogram": False,
             },
@@ -340,7 +354,12 @@ def _build_route_study_models(active_model: dict[str, Any], route: str) -> list[
                 "name": "EMA12 - EMA26",
                 "tag": "Pullback",
                 "foot": ["Fast versus slow", "Continuation risk"],
-                "series": [fast - slow for fast, slow in zip(analytics["ema12"], analytics["ema26"], strict=True)],
+                "series": [
+                    fast - slow
+                    for fast, slow in zip(
+                        analytics["ema12"], analytics["ema26"], strict=True
+                    )
+                ],
                 "tone": "blue",
                 "histogram": False,
             },
@@ -348,7 +367,12 @@ def _build_route_study_models(active_model: dict[str, Any], route: str) -> list[
                 "name": "MA5 - MA20",
                 "tag": "Front End",
                 "foot": ["Near-term spread", "Trend firmness"],
-                "series": [fast - slow for fast, slow in zip(analytics["ma5"], analytics["ma20"], strict=True)],
+                "series": [
+                    fast - slow
+                    for fast, slow in zip(
+                        analytics["ma5"], analytics["ma20"], strict=True
+                    )
+                ],
                 "tone": "green",
                 "histogram": False,
             },
@@ -367,7 +391,12 @@ def _build_route_study_models(active_model: dict[str, Any], route: str) -> list[
                 "name": "Band Width",
                 "tag": "Compression",
                 "foot": ["Upper minus lower", "Breakout readiness"],
-                "series": [upper - lower for upper, lower in zip(analytics["boll_upper"], analytics["boll_lower"], strict=True)],
+                "series": [
+                    upper - lower
+                    for upper, lower in zip(
+                        analytics["boll_upper"], analytics["boll_lower"], strict=True
+                    )
+                ],
                 "tone": "blue",
                 "histogram": False,
             },
@@ -413,7 +442,9 @@ def _build_route_study_models(active_model: dict[str, Any], route: str) -> list[
                 "name": "Micro Range",
                 "tag": "Queue",
                 "foot": ["High-low pulse", "Spread pressure"],
-                "series": [(candle["high"] - candle["low"]) * 100 for candle in candles],
+                "series": [
+                    (candle["high"] - candle["low"]) * 100 for candle in candles
+                ],
                 "tone": "amber",
                 "histogram": False,
             },
@@ -439,7 +470,10 @@ def _build_route_study_models(active_model: dict[str, Any], route: str) -> list[
             "name": "MA5 - MA20",
             "tag": "Structure",
             "foot": ["Trend stack", "Bias spread"],
-            "series": [fast - slow for fast, slow in zip(analytics["ma5"], analytics["ma20"], strict=True)],
+            "series": [
+                fast - slow
+                for fast, slow in zip(analytics["ma5"], analytics["ma20"], strict=True)
+            ],
             "tone": "amber",
             "histogram": False,
         },
@@ -455,7 +489,12 @@ def _build_route_study_models(active_model: dict[str, Any], route: str) -> list[
             "name": "Price - VWAP",
             "tag": "Location",
             "foot": ["Relative price", "Fair value gap"],
-            "series": [close - fair for close, fair in zip(analytics["closes"], analytics["vwap"], strict=True)],
+            "series": [
+                close - fair
+                for close, fair in zip(
+                    analytics["closes"], analytics["vwap"], strict=True
+                )
+            ],
             "tone": "green",
             "histogram": False,
         },
@@ -470,7 +509,11 @@ def build_route_studies(
 ) -> list[dict[str, str]]:
     """Build the lower linked study panes for the active route."""
 
-    tone_map = {"amber": TONE_COLORS["amber"], "blue": TONE_COLORS["blue"], "green": TONE_COLORS["up"]}
+    tone_map = {
+        "amber": TONE_COLORS["amber"],
+        "blue": TONE_COLORS["blue"],
+        "green": TONE_COLORS["up"],
+    }
     cards: list[dict[str, str]] = []
     for study in _build_route_study_models(active_model, route):
         series = study["series"]
@@ -485,23 +528,33 @@ def build_route_studies(
             svg_body = f"<line x1='0' y1='{height - 1:.2f}' x2='{width:.2f}' y2='{height - 1:.2f}' stroke='#22303d' stroke-width='1'></line><path d='{_line_path(series, minimum, maximum, width, height)}' fill='none' stroke='{tone_map[study['tone']]}' stroke-width='1.8'></path>"
         latest_value = _format_study_value(series[-1])
         hover_value = _format_study_value(series[series_index])
-        cards.append({
-            "name": study["name"],
-            "tag": study["tag"],
-            "tone": study["tone"],
-            "value": latest_value,
-            "hover_value": hover_value,
-            "display_value": hover_value if hover_active else latest_value,
-            "hover_label": f"{active_model['scale']} BAR {series_index + 1:02d}/{len(series):02d}",
-            "display_label": f"{active_model['scale']} BAR {series_index + 1:02d}/{len(series):02d}" if hover_active else "Latest",
-            "foot_left": study["foot"][0],
-            "foot_right": study["foot"][1],
-            "svg": f"<svg viewBox='0 0 {width:.0f} {height:.0f}' preserveAspectRatio='none' aria-label='{study['name']}'>{svg_body}</svg>",
-        })
+        cards.append(
+            {
+                "name": study["name"],
+                "tag": study["tag"],
+                "tone": study["tone"],
+                "value": latest_value,
+                "hover_value": hover_value,
+                "display_value": hover_value if hover_active else latest_value,
+                "hover_label": f"{active_model['scale']} BAR {series_index + 1:02d}/{len(series):02d}",
+                "display_label": f"{active_model['scale']} BAR {series_index + 1:02d}/{len(series):02d}"
+                if hover_active
+                else "Latest",
+                "foot_left": study["foot"][0],
+                "foot_right": study["foot"][1],
+                "svg": f"<svg viewBox='0 0 {width:.0f} {height:.0f}' preserveAspectRatio='none' aria-label='{study['name']}'>{svg_body}</svg>",
+            }
+        )
     return cards
 
 
-def build_analysis_cards(active_model: dict[str, Any], route: str, scale: str, overlays: list[str], depth_mode: str) -> list[dict[str, Any]]:
+def build_analysis_cards(
+    active_model: dict[str, Any],
+    route: str,
+    scale: str,
+    overlays: list[str],
+    depth_mode: str,
+) -> list[dict[str, Any]]:
     """Build the scheduled AI analysis cards."""
 
     constructive = active_model["change_pct"] >= 0
@@ -546,9 +599,17 @@ def build_analysis_cards(active_model: dict[str, Any], route: str, scale: str, o
             "stamp": "Watch",
             "body": f"Monitor for a break {'back under' if constructive else 'back above'} the short moving-average cluster, a spread expansion beyond recent norms, or a visible slowdown in participation. Any two together would downgrade the next scheduled analysis.",
             "metric_1_label": "VWAP Gap",
-            "metric_1_value": format_signed(((active_model['last'] - active_model['analytics']['vwap'][-1]) / active_model['analytics']['vwap'][-1]) * 100, 2, "%"),
+            "metric_1_value": format_signed(
+                (
+                    (active_model["last"] - active_model["analytics"]["vwap"][-1])
+                    / active_model["analytics"]["vwap"][-1]
+                )
+                * 100,
+                2,
+                "%",
+            ),
             "metric_2_label": "ATR",
-            "metric_2_value": format_number(active_model['analytics']['atr14'][-1]),
+            "metric_2_value": format_number(active_model["analytics"]["atr14"][-1]),
             "metric_3_label": "Bias",
             "metric_3_value": direction.upper(),
         },

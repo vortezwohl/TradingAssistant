@@ -251,7 +251,9 @@ class WatchPageState(rx.State):
     @rx.event
     def toggle_overlay(self, overlay: str) -> None:
         if overlay in self.active_overlays:
-            self.active_overlays = [item for item in self.active_overlays if item != overlay]
+            self.active_overlays = [
+                item for item in self.active_overlays if item != overlay
+            ]
             self._reset_hover()
             return
         self.active_overlays = [*self.active_overlays, overlay]

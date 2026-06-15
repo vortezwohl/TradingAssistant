@@ -211,9 +211,6 @@ TONE_COLORS = {
 }
 
 
-
-
-
 def get_symbol_profile(code: str) -> dict[str, str]:
     """Return a static profile for the selected code."""
 
@@ -237,7 +234,6 @@ def get_symbol_profile(code: str) -> dict[str, str]:
     }
 
 
-
 def build_market_model(code: str, scale: str) -> dict[str, Any]:
     """Build the full mock model for the active symbol and scale."""
 
@@ -255,10 +251,27 @@ def build_market_model(code: str, scale: str) -> dict[str, Any]:
         wave_secondary = math.cos((index + (seed % 29)) / 8.7) * amplitude * 0.58
         drift = ((index - 36) / 36) * amplitude * ((((seed >> 5) % 7) - 3) / 3)
         open_price = running + math.sin((index + (seed % 11)) / 3.4) * amplitude * 0.14
-        close_price = running + (wave_primary * 0.21) + (wave_secondary * 0.14) + (drift * 0.17)
-        high_price = max(open_price, close_price) + abs(math.cos(index / 4.1 + seed % 5)) * amplitude * 0.34 + 0.04
-        low_price = min(open_price, close_price) - abs(math.sin(index / 3.6 + seed % 7)) * amplitude * 0.31 - 0.04
-        volume = float(int(1400 + abs(math.sin(index / 2.8 + (seed % 13))) * 8800 + index * 18 + (seed % 700)))
+        close_price = (
+            running + (wave_primary * 0.21) + (wave_secondary * 0.14) + (drift * 0.17)
+        )
+        high_price = (
+            max(open_price, close_price)
+            + abs(math.cos(index / 4.1 + seed % 5)) * amplitude * 0.34
+            + 0.04
+        )
+        low_price = (
+            min(open_price, close_price)
+            - abs(math.sin(index / 3.6 + seed % 7)) * amplitude * 0.31
+            - 0.04
+        )
+        volume = float(
+            int(
+                1400
+                + abs(math.sin(index / 2.8 + (seed % 13))) * 8800
+                + index * 18
+                + (seed % 700)
+            )
+        )
         delta = float(int((close_price - open_price) * volume * 0.7))
         turnover = volume * ((open_price + close_price + high_price + low_price) / 4)
         candles.append(
@@ -280,8 +293,7 @@ def build_market_model(code: str, scale: str) -> dict[str, Any]:
     volumes = [item["volume"] for item in candles]
     turnovers = [item["turnover"] for item in candles]
     typical_prices = [
-        (item["high"] + item["low"] + item["close"]) / 3
-        for item in candles
+        (item["high"] + item["low"] + item["close"]) / 3 for item in candles
     ]
 
     cumulative_turnover = 0.0
@@ -303,7 +315,9 @@ def build_market_model(code: str, scale: str) -> dict[str, Any]:
     boll_lower = [mid - (std * 2) for mid, std in zip(boll_mid, std20, strict=True)]
     macd_line = [fast - slow for fast, slow in zip(ema12, ema26, strict=True)]
     macd_signal = _ema(macd_line, 9)
-    macd_hist = [line - signal for line, signal in zip(macd_line, macd_signal, strict=True)]
+    macd_hist = [
+        line - signal for line, signal in zip(macd_line, macd_signal, strict=True)
+    ]
     rsi14 = _rsi(closes, 14)
     atr14 = _atr(candles, 14)
     obv = _obv(candles)
@@ -351,21 +365,39 @@ def build_market_model(code: str, scale: str) -> dict[str, Any]:
     }
 
 
-
 def build_quote_strip(active_model: dict[str, Any]) -> list[dict[str, str]]:
     """Build the compact quote strip for the top bar."""
 
     analytics = active_model["analytics"]
     return [
-        {"label": active_model["meta"]["code"], "value": format_number(active_model["last"]), "tone": active_model["tone"]},
-        {"label": "VWAP", "value": format_number(analytics["vwap"][-1]), "tone": "blue"},
-        {"label": "ATR", "value": format_number(analytics["atr14"][-1]), "tone": "amber"},
-        {"label": "Spread", "value": format_number(max(0.01, abs(active_model["change_pct"]) * 0.03), 2), "tone": "soft"},
+        {
+            "label": active_model["meta"]["code"],
+            "value": format_number(active_model["last"]),
+            "tone": active_model["tone"],
+        },
+        {
+            "label": "VWAP",
+            "value": format_number(analytics["vwap"][-1]),
+            "tone": "blue",
+        },
+        {
+            "label": "ATR",
+            "value": format_number(analytics["atr14"][-1]),
+            "tone": "amber",
+        },
+        {
+            "label": "Spread",
+            "value": format_number(
+                max(0.01, abs(active_model["change_pct"]) * 0.03), 2
+            ),
+            "tone": "soft",
+        },
     ]
 
 
-
-def build_watchlist_rows(codes: list[str], active_code: str, scale: str, sort_mode: str) -> list[dict[str, str | bool]]:
+def build_watchlist_rows(
+    codes: list[str], active_code: str, scale: str, sort_mode: str
+) -> list[dict[str, str | bool]]:
     """Build the watchlist table rows."""
 
     rows: list[dict[str, str | bool]] = []
@@ -384,9 +416,10 @@ def build_watchlist_rows(codes: list[str], active_code: str, scale: str, sort_mo
             }
         )
 
-    rows.sort(key=lambda item: str(item["name"] if sort_mode == "name" else item["code"]))
+    rows.sort(
+        key=lambda item: str(item["name"] if sort_mode == "name" else item["code"])
+    )
     return rows
-
 
 
 def build_movers_rows(tab: str, scale: str) -> list[dict[str, str]]:
@@ -419,17 +452,39 @@ def build_movers_rows(tab: str, scale: str) -> list[dict[str, str]]:
     ]
 
 
-
 def build_snapshot_cells(active_model: dict[str, Any]) -> list[dict[str, str]]:
     """Build the desk snapshot cells."""
 
     return [
-        {"label": "Net Bias", "value": "Risk On" if active_model["change_pct"] >= 0 else "Defensive", "sub": "Scheduled desk posture"},
-        {"label": "Flow Score", "value": f"{62 + int(abs(active_model['change_pct']) * 4):d}", "sub": "Bid/ask participation"},
-        {"label": "Vol Pulse", "value": format_number(active_model["analytics"]["atr14"][-1]), "sub": "Range expansion"},
-        {"label": "VWAP Gap", "value": format_signed(((active_model["last"] - active_model["analytics"]["vwap"][-1]) / active_model["analytics"]["vwap"][-1]) * 100, 2, "%"), "sub": "Price versus fair flow"},
+        {
+            "label": "Net Bias",
+            "value": "Risk On" if active_model["change_pct"] >= 0 else "Defensive",
+            "sub": "Scheduled desk posture",
+        },
+        {
+            "label": "Flow Score",
+            "value": f"{62 + int(abs(active_model['change_pct']) * 4):d}",
+            "sub": "Bid/ask participation",
+        },
+        {
+            "label": "Vol Pulse",
+            "value": format_number(active_model["analytics"]["atr14"][-1]),
+            "sub": "Range expansion",
+        },
+        {
+            "label": "VWAP Gap",
+            "value": format_signed(
+                (
+                    (active_model["last"] - active_model["analytics"]["vwap"][-1])
+                    / active_model["analytics"]["vwap"][-1]
+                )
+                * 100,
+                2,
+                "%",
+            ),
+            "sub": "Price versus fair flow",
+        },
     ]
-
 
 
 def build_instrument_metrics(active_model: dict[str, Any]) -> list[dict[str, str]]:
@@ -446,29 +501,35 @@ def build_instrument_metrics(active_model: dict[str, Any]) -> list[dict[str, str
     ]
 
 
-
-
-def _build_overlay_legend_models(active_model: dict[str, Any], overlays: list[str]) -> list[dict[str, Any]]:
+def _build_overlay_legend_models(
+    active_model: dict[str, Any], overlays: list[str]
+) -> list[dict[str, Any]]:
     """Return the active overlay series used by legends and hover cards."""
 
     analytics = active_model["analytics"]
     items: list[dict[str, Any]] = []
     if "MA" in overlays:
-        items.extend([
-            {"label": "MA5", "series": analytics["ma5"], "tone": "amber"},
-            {"label": "MA20", "series": analytics["ma20"], "tone": "blue"},
-            {"label": "MA60", "series": analytics["ma60"], "tone": "soft"},
-        ])
+        items.extend(
+            [
+                {"label": "MA5", "series": analytics["ma5"], "tone": "amber"},
+                {"label": "MA20", "series": analytics["ma20"], "tone": "blue"},
+                {"label": "MA60", "series": analytics["ma60"], "tone": "soft"},
+            ]
+        )
     if "EMA" in overlays:
-        items.extend([
-            {"label": "EMA12", "series": analytics["ema12"], "tone": "up"},
-            {"label": "EMA26", "series": analytics["ema26"], "tone": "down"},
-        ])
+        items.extend(
+            [
+                {"label": "EMA12", "series": analytics["ema12"], "tone": "up"},
+                {"label": "EMA26", "series": analytics["ema26"], "tone": "down"},
+            ]
+        )
     if "BOLL" in overlays:
-        items.extend([
-            {"label": "BOLL U", "series": analytics["boll_upper"], "tone": "cyan"},
-            {"label": "BOLL L", "series": analytics["boll_lower"], "tone": "cyan"},
-        ])
+        items.extend(
+            [
+                {"label": "BOLL U", "series": analytics["boll_upper"], "tone": "cyan"},
+                {"label": "BOLL L", "series": analytics["boll_lower"], "tone": "cyan"},
+            ]
+        )
     if "VWAP" in overlays:
         items.append({"label": "VWAP", "series": analytics["vwap"], "tone": "yellow"})
     return items

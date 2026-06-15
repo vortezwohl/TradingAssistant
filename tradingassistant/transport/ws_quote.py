@@ -1,6 +1,7 @@
-﻿"""列表行情推送 WebSocket 路由。
+"""Quote list push WebSocket route.
 
-该模块负责建立行情列表增量推送连接，处理客户端按名称订阅/退订行情流。
+This module establishes quote list increment push connections and handles
+client subscribe/unsubscribe requests for quote streams by name.
 """
 
 from __future__ import annotations
@@ -33,15 +34,15 @@ async def handle_quote_stream(
     topic_bus: TopicBus,
     service: Any,
 ) -> None:
-    """处理列表行情推送的完整生命周期。
+    """Handle the full lifecycle of quote list push.
 
     Args:
-        websocket: WebSocket 连接。
-        session_id: 会话标识。
-        connections: 会话连接映射。
-        registry: 订阅注册表。
-        topic_bus: 主题总线。
-        service: MarketMonitorService 实例。
+        websocket: WebSocket connection.
+        session_id: Session identifier.
+        connections: Session connection mapping.
+        registry: Subscription registry.
+        topic_bus: Topic bus.
+        service: MarketMonitorService instance.
     """
 
     await websocket.accept()
@@ -51,11 +52,17 @@ async def handle_quote_stream(
     try:
         while True:
             raw = await websocket.receive_text()
-            payload = json.loads(raw) if raw.strip().startswith("{") else {"action": "subscribe"}
+            payload = (
+                json.loads(raw)
+                if raw.strip().startswith("{")
+                else {"action": "subscribe"}
+            )
             action = payload.get("action", "subscribe")
             topic = quotes_topic(payload.get("name", "watchlist"))
             if action == "unsubscribe":
-                unsubscribe_topic(session_id, topic, connections, registry, topic_bus, service)
+                unsubscribe_topic(
+                    session_id, topic, connections, registry, topic_bus, service
+                )
                 await websocket.send_json(subscription_ack(action, topic))
                 continue
             subscribe_topic(

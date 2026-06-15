@@ -1,7 +1,7 @@
-"""承载市场数据接入与标准化逻辑。
+"""Market data access and normalization logic.
 
-该子包负责：
-1. 封装 iTick REST 与 WebSocket 访问；
-2. 输出统一的领域事件；
-3. 屏蔽线程模型、原始协议和错误细节。
+This sub-package is responsible for:
+1. Encapsulating iTick REST and WebSocket access;
+2. Producing unified domain events;
+3. Hiding threading models, raw protocols, and error details.
 """

@@ -1,8 +1,10 @@
-"""定义订阅注册抽象与进程内实现。
+"""Subscription registration abstraction and in-process implementation.
 
-订阅注册层关注会话到主题、主题到会话的映射关系。它与 TopicBus 的区别是：
-TopicBus 负责消息广播，SubscriptionRegistry 负责回答“谁订阅了什么”。
-这样可以把资源释放、空主题回收和未来跨进程共享注册状态的需求独立出来。
+The subscription registry layer manages session-to-topic and topic-to-session
+mappings. It differs from TopicBus: TopicBus handles message broadcast while
+SubscriptionRegistry answers "who subscribed to what". This separates concerns
+like resource release, empty topic reclamation, and future cross-process
+shared registration state.
 """
 
 from __future__ import annotations
@@ -13,63 +15,63 @@ from threading import RLock
 
 
 class SubscriptionRegistry(ABC):
-    """定义会话订阅注册统一接口。"""
+    """Define unified session subscription registration interface."""
 
     @abstractmethod
     def register(self, session_id: str, topic: str) -> None:
-        """注册会话对主题的订阅。"""
+        """Register a session subscription to a topic."""
 
     @abstractmethod
     def unregister(self, session_id: str, topic: str) -> None:
-        """取消会话对主题的订阅。"""
+        """Cancel a session subscription to a topic."""
 
     @abstractmethod
     def unregister_all(self, session_id: str) -> list[str]:
-        """取消会话的所有订阅，并返回受影响的主题列表。"""
+        """Cancel all subscriptions for a session and return affected topic list."""
 
     @abstractmethod
     def topics_for_session(self, session_id: str) -> set[str]:
-        """返回会话当前订阅的主题集合。"""
+        """Return the set of topics currently subscribed by a session."""
 
     @abstractmethod
     def sessions_for_topic(self, topic: str) -> set[str]:
-        """返回主题当前关联的会话集合。"""
+        """Return the set of sessions currently associated with a topic."""
 
     @abstractmethod
     def topic_subscriber_count(self, topic: str) -> int:
-        """返回主题订阅者数量。"""
+        """Return the subscriber count for a topic."""
 
     @abstractmethod
     def clear(self) -> None:
-        """清空注册表。"""
+        """Clear the registry."""
 
 
 class InMemorySubscriptionRegistry(SubscriptionRegistry):
-    """基于进程内集合映射的订阅注册实现。"""
+    """In-process set-mapping-based subscription registry implementation."""
 
     def __init__(self) -> None:
-        """初始化进程内订阅注册表。"""
+        """Initialize in-process subscription registry."""
         self._session_topics: dict[str, set[str]] = defaultdict(set)
         self._topic_sessions: dict[str, set[str]] = defaultdict(set)
         self._lock = RLock()
 
     def register(self, session_id: str, topic: str) -> None:
-        """注册订阅关系。
+        """Register a subscription relationship.
 
         Args:
-            session_id: 会话标识。
-            topic: 主题标识。
+            session_id: Session identifier.
+            topic: Topic identifier.
         """
         with self._lock:
             self._session_topics[session_id].add(topic)
             self._topic_sessions[topic].add(session_id)
 
     def unregister(self, session_id: str, topic: str) -> None:
-        """移除订阅关系。
+        """Remove a subscription relationship.
 
         Args:
-            session_id: 会话标识。
-            topic: 主题标识。
+            session_id: Session identifier.
+            topic: Topic identifier.
         """
         with self._lock:
             if session_id in self._session_topics:
@@ -82,13 +84,13 @@ class InMemorySubscriptionRegistry(SubscriptionRegistry):
                     self._topic_sessions.pop(topic, None)
 
     def unregister_all(self, session_id: str) -> list[str]:
-        """移除会话的所有订阅。
+        """Remove all subscriptions for a session.
 
         Args:
-            session_id: 会话标识。
+            session_id: Session identifier.
 
         Returns:
-            被解除关联的主题列表。
+            List of topics that were unlinked.
         """
         with self._lock:
             topics = list(self._session_topics.pop(session_id, set()))
@@ -102,52 +104,52 @@ class InMemorySubscriptionRegistry(SubscriptionRegistry):
             return topics
 
     def topics_for_session(self, session_id: str) -> set[str]:
-        """返回会话的订阅主题集合。
+        """Return the topic set for a session.
 
         Args:
-            session_id: 会话标识。
+            session_id: Session identifier.
 
         Returns:
-            主题集合副本。
+            Copy of the topic set.
         """
         with self._lock:
             return set(self._session_topics.get(session_id, set()))
 
     def sessions_for_topic(self, topic: str) -> set[str]:
-        """返回主题下的会话集合。
+        """Return the session set for a topic.
 
         Args:
-            topic: 主题标识。
+            topic: Topic identifier.
 
         Returns:
-            会话集合副本。
+            Copy of the session set.
         """
         with self._lock:
             return set(self._topic_sessions.get(topic, set()))
 
     def topic_subscriber_count(self, topic: str) -> int:
-        """返回主题订阅数。
+        """Return the topic subscriber count.
 
         Args:
-            topic: 主题标识。
+            topic: Topic identifier.
 
         Returns:
-            当前主题订阅数。
+            Current topic subscriber count.
         """
         with self._lock:
             return len(self._topic_sessions.get(topic, set()))
 
     def clear(self) -> None:
-        """清空全部注册关系。"""
+        """Clear all registration relationships."""
         with self._lock:
             self._session_topics.clear()
             self._topic_sessions.clear()
 
     def snapshot(self) -> dict[str, dict[str, list[str]]]:
-        """返回注册表快照，便于测试或调试。
+        """Return registry snapshot for testing or debugging.
 
         Returns:
-            当前注册状态的可序列化快照。
+            Serializable snapshot of current registration state.
         """
         with self._lock:
             return {

@@ -1,6 +1,7 @@
-"""封装运行态基础设施抽象与默认实现。
+"""Runtime infrastructure abstractions and default implementations.
 
-该子包负责提供缓存、主题广播和订阅注册的统一接口，并在当前阶段
-提供基于 MEMORY 的默认实现。未来若要迁移到 Redis，应优先在这里
-扩展新的后端实现，而不是改动业务模块调用方式。
+This sub-package provides unified interfaces for caching, topic broadcast,
+and subscription registration, with MEMORY-based default implementations for
+the current phase. Future Redis migration should add new backend implementations
+here rather than changing business module call sites.
 """

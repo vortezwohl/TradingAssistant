@@ -1,5 +1,6 @@
-"""承载 Reflex 页面层集成代码。
+"""Reflex page-layer integration code.
 
-当前阶段只建立目录边界，后续会在这里接入页面 bootstrap 调用、
-图表增量刷新和页面状态边界控制逻辑。
+Currently establishes directory boundaries only; page bootstrap calls,
+chart increment refresh, and page state boundary control logic will be
+wired in later.
 """

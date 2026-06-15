@@ -1,9 +1,10 @@
-"""定义图表主链路的核心数据模型。
+"""Core data models for the chart pipeline.
 
-该模块集中承载：
-1. 图表 bootstrap 所需的快照结构；
-2. forming / closed bar 的运行态模型；
-3. 供聚合器、指标引擎与传输门面共享的通用序列化结构。
+This module centralizes:
+1. Snapshot structures for chart bootstrap;
+2. Runtime models for forming/closed bars;
+3. Common serialization structures shared by aggregator, indicator engine,
+   and transport facade.
 """
 
 from __future__ import annotations
@@ -15,7 +16,7 @@ from typing import Any
 
 @dataclass(slots=True)
 class RuntimeBar:
-    """描述运行态中的一根 K 线。"""
+    """Describe a single K-line (bar) in runtime."""
 
     symbol: str
     period: str
@@ -29,10 +30,10 @@ class RuntimeBar:
     provisional: bool = True
 
     def to_dict(self) -> dict[str, Any]:
-        """把 bar 转为可序列化结构。
+        """Convert bar to a serializable structure.
 
         Returns:
-            适合缓存或传输的字典结构。
+            Dictionary suitable for caching or transport.
         """
         return {
             "symbol": self.symbol,
@@ -50,7 +51,7 @@ class RuntimeBar:
 
 @dataclass(slots=True)
 class ChartSnapshot:
-    """描述图表 bootstrap 快照。"""
+    """Describe a chart bootstrap snapshot."""
 
     topic: str
     symbol: str
@@ -60,10 +61,10 @@ class ChartSnapshot:
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
-        """转为可序列化结构。
+        """Convert to a serializable structure.
 
         Returns:
-            字典形式的快照结构。
+            Snapshot as a dictionary.
         """
         return {
             "topic": self.topic,

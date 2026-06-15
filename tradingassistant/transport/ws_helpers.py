@@ -1,9 +1,9 @@
-﻿"""WebSocket 会话管理与订阅生命周期公共工具。
+"""WebSocket session management and subscription lifecycle shared utilities.
 
-该模块提供 transport 层各 WebSocket 路由共用的：
-1. 会话连接结构体；
-2. 订阅/退订/清理逻辑；
-3. 线程安全的消息发送回调。
+This module provides shared utilities for all transport-layer WebSocket routes:
+1. Session connection structure;
+2. Subscribe/unsubscribe/cleanup logic;
+3. Thread-safe message send callbacks.
 """
 
 from __future__ import annotations
@@ -20,12 +20,12 @@ from tradingassistant.infrastructure.topic_bus import SubscriptionHandle, TopicB
 
 @dataclass(slots=True)
 class SessionConnection:
-    """记录单个 WebSocket 会话的连接与订阅句柄。
+    """Record connection and subscription handles for a single WebSocket session.
 
     Args:
-        session_id: 会话标识。
-        websocket: WebSocket 连接对象。
-        handles: 主题到订阅句柄的映射。
+        session_id: Session identifier.
+        websocket: WebSocket connection object.
+        handles: Topic to subscription handle mapping.
     """
 
     session_id: str
@@ -44,17 +44,17 @@ def subscribe_topic(
     topic_bus: TopicBus,
     service: Any,
 ) -> None:
-    """统一处理会话订阅。
+    """Unified session subscription handling.
 
     Args:
-        session_id: 会话标识。
-        topic: 主题标识。
-        loop: 事件循环。
-        websocket: WebSocket 连接。
-        connections: 会话连接映射。
-        registry: 订阅注册表。
-        topic_bus: 主题总线。
-        service: MarketMonitorService 实例。
+        session_id: Session identifier.
+        topic: Topic identifier.
+        loop: Event loop.
+        websocket: WebSocket connection.
+        connections: Session connection mapping.
+        registry: Subscription registry.
+        topic_bus: Topic bus.
+        service: MarketMonitorService instance.
     """
 
     connection = connections[session_id]
@@ -67,7 +67,9 @@ def subscribe_topic(
         make_sender_callback(loop, websocket),
     )
     connection.handles[topic] = handle
-    service.metrics.update_topic_subscribers(topic, registry.topic_subscriber_count(topic))
+    service.metrics.update_topic_subscribers(
+        topic, registry.topic_subscriber_count(topic)
+    )
 
 
 def unsubscribe_topic(
@@ -78,15 +80,15 @@ def unsubscribe_topic(
     topic_bus: TopicBus,
     service: Any,
 ) -> None:
-    """统一处理会话退订与空主题回收。
+    """Unified session unsubscription and empty topic cleanup.
 
     Args:
-        session_id: 会话标识。
-        topic: 主题标识。
-        connections: 会话连接映射。
-        registry: 订阅注册表。
-        topic_bus: 主题总线。
-        service: MarketMonitorService 实例。
+        session_id: Session identifier.
+        topic: Topic identifier.
+        connections: Session connection mapping.
+        registry: Subscription registry.
+        topic_bus: Topic bus.
+        service: MarketMonitorService instance.
     """
 
     connection = connections.get(session_id)
@@ -96,25 +98,27 @@ def unsubscribe_topic(
     if handle is not None:
         topic_bus.unsubscribe(handle)
     registry.unregister(session_id, topic)
-    service.metrics.update_topic_subscribers(topic, registry.topic_subscriber_count(topic))
+    service.metrics.update_topic_subscribers(
+        topic, registry.topic_subscriber_count(topic)
+    )
 
 
 def make_sender_callback(
     loop: asyncio.AbstractEventLoop,
     websocket: WebSocket,
 ):
-    """为指定连接创建线程安全的消息发送回调。
+    """Create a thread-safe message send callback for a connection.
 
     Args:
-        loop: 事件循环。
-        websocket: WebSocket 连接。
+        loop: Event loop.
+        websocket: WebSocket connection.
 
     Returns:
-        线程安全的消息发送回调函数。
+        Thread-safe message send callback function.
     """
 
     def sender(_topic: str, payload: Any) -> None:
-        """把同步广播事件调度到连接所在事件循环中。"""
+        """Schedule a synchronous broadcast event onto the connection event loop."""
         loop.call_soon_threadsafe(
             asyncio.create_task,
             websocket.send_json(payload),
@@ -124,14 +128,14 @@ def make_sender_callback(
 
 
 def subscription_ack(action: str, topic: str) -> dict[str, str]:
-    """构造订阅生命周期确认消息。
+    """Build a subscription lifecycle acknowledgment message.
 
     Args:
-        action: 订阅动作。
-        topic: 主题标识。
+        action: Subscription action.
+        topic: Topic identifier.
 
     Returns:
-        确认消息字典。
+        Acknowledgment message dict.
     """
 
     return {
@@ -148,14 +152,14 @@ def cleanup_connection(
     topic_bus: TopicBus,
     service: Any,
 ) -> None:
-    """统一清理连接、主题订阅与运行态计数。
+    """Unified cleanup of connection, topic subscriptions, and runtime counters.
 
     Args:
-        session_id: 会话标识。
-        connections: 会话连接映射。
-        registry: 订阅注册表。
-        topic_bus: 主题总线。
-        service: MarketMonitorService 实例。
+        session_id: Session identifier.
+        connections: Session connection mapping.
+        registry: Subscription registry.
+        topic_bus: Topic bus.
+        service: MarketMonitorService instance.
     """
 
     topics = registry.unregister_all(session_id)
@@ -164,4 +168,6 @@ def cleanup_connection(
         for handle in connection.handles.values():
             topic_bus.unsubscribe(handle)
     for topic in topics:
-        service.metrics.update_topic_subscribers(topic, registry.topic_subscriber_count(topic))
+        service.metrics.update_topic_subscribers(
+            topic, registry.topic_subscriber_count(topic)
+        )

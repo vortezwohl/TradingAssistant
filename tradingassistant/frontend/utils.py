@@ -193,14 +193,10 @@ TONE_COLORS = {
 }
 
 
-
-
-
 def normalize_code(value: str) -> str:
     """Normalize a user-entered watchlist code."""
 
     return value.strip().upper().replace(" ", "")
-
 
 
 def _seed_from_key(key: str) -> int:
@@ -208,7 +204,6 @@ def _seed_from_key(key: str) -> int:
 
     digest = hashlib.sha256(key.encode("utf-8")).hexdigest()
     return int(digest[:8], 16)
-
 
 
 def _scale_amplitude(scale: str) -> float:
@@ -228,12 +223,10 @@ def _scale_amplitude(scale: str) -> float:
     }.get(scale, 2.40)
 
 
-
 def format_number(value: float, digits: int = 2) -> str:
     """Format a numeric terminal value."""
 
     return f"{value:,.{digits}f}"
-
 
 
 def format_signed(value: float, digits: int = 2, suffix: str = "") -> str:
@@ -241,7 +234,6 @@ def format_signed(value: float, digits: int = 2, suffix: str = "") -> str:
 
     sign = "+" if value >= 0 else "-"
     return f"{sign}{abs(value):,.{digits}f}{suffix}"
-
 
 
 def compact_volume(value: float) -> str:
@@ -257,7 +249,6 @@ def compact_volume(value: float) -> str:
     return f"{value:.0f}"
 
 
-
 def tone_from_number(value: float) -> str:
     """Map numeric direction to a semantic tone key."""
 
@@ -268,7 +259,6 @@ def tone_from_number(value: float) -> str:
     return "flat"
 
 
-
 def _clamp_chart_index(index: int | None, length: int) -> int:
     """Clamp a hover index to the available chart series length."""
 
@@ -277,7 +267,6 @@ def _clamp_chart_index(index: int | None, length: int) -> int:
     if index is None:
         return length - 1
     return max(0, min(index, length - 1))
-
 
 
 def _format_study_value(value: float) -> str:
@@ -293,7 +282,6 @@ def _format_study_value(value: float) -> str:
     return format_number(value, 3)
 
 
-
 def build_tape_rows(active_model: dict[str, Any]) -> list[dict[str, str]]:
     """Build the recent prints rows for the Tape tab."""
 
@@ -302,44 +290,67 @@ def build_tape_rows(active_model: dict[str, Any]) -> list[dict[str, str]]:
         side = "BUY" if index % 3 else "SELL"
         price = active_model["last"] + ((index % 5) - 2) * 0.1
         size = 400 + index * 180
-        rows.append({
-            "price": format_number(price),
-            "size": compact_volume(size),
-            "time": f"14:{28 + (index // 3):02d}:{(index * 7) % 60:02d}",
-            "side": side,
-            "tone": "up" if side == "BUY" else "down",
-        })
+        rows.append(
+            {
+                "price": format_number(price),
+                "size": compact_volume(size),
+                "time": f"14:{28 + (index // 3):02d}:{(index * 7) % 60:02d}",
+                "side": side,
+                "tone": "up" if side == "BUY" else "down",
+            }
+        )
     return rows
-
 
 
 def build_signal_rows() -> list[dict[str, str]]:
     """Build the Signals rail rows."""
 
     return [
-        {"title": "Trend continuation", "body": "MA stack remains positively aligned and pullbacks keep holding near VWAP."},
-        {"title": "Liquidity pocket", "body": "Offer depth thins two ticks above last trade while the bid queue refills."},
-        {"title": "Momentum carry", "body": "MACD and RSI stay constructive on the active route settings."},
-        {"title": "Execution note", "body": "Mock child-order slices would still favor passive accumulation."},
+        {
+            "title": "Trend continuation",
+            "body": "MA stack remains positively aligned and pullbacks keep holding near VWAP.",
+        },
+        {
+            "title": "Liquidity pocket",
+            "body": "Offer depth thins two ticks above last trade while the bid queue refills.",
+        },
+        {
+            "title": "Momentum carry",
+            "body": "MACD and RSI stay constructive on the active route settings.",
+        },
+        {
+            "title": "Execution note",
+            "body": "Mock child-order slices would still favor passive accumulation.",
+        },
     ]
-
 
 
 def build_news_rows() -> list[dict[str, str]]:
     """Build the News rail rows."""
 
     return [
-        {"title": "Sector breadth remains concentrated in platform and chip names", "body": "Mock desk wrap / 14:29 / breadth broadens but leadership remains concentrated in liquid growth."},
-        {"title": "Macro desk flags stable rates backdrop for risk assets", "body": "Mock rates recap / 14:16 / front-end repricing slows and beta appetite improves."},
-        {"title": "Execution commentary sees healthy passive support below market", "body": "Mock market color / 13:58 / queue replenishment remains visible on the bid side."},
-        {"title": "Fundamental narrative stays secondary to positioning impulse", "body": "Mock strategy note / 13:41 / near-term price discovery remains flow-led."},
+        {
+            "title": "Sector breadth remains concentrated in platform and chip names",
+            "body": "Mock desk wrap / 14:29 / breadth broadens but leadership remains concentrated in liquid growth.",
+        },
+        {
+            "title": "Macro desk flags stable rates backdrop for risk assets",
+            "body": "Mock rates recap / 14:16 / front-end repricing slows and beta appetite improves.",
+        },
+        {
+            "title": "Execution commentary sees healthy passive support below market",
+            "body": "Mock market color / 13:58 / queue replenishment remains visible on the bid side.",
+        },
+        {
+            "title": "Fundamental narrative stays secondary to positioning impulse",
+            "body": "Mock strategy note / 13:41 / near-term price discovery remains flow-led.",
+        },
     ]
 
 
-
-
-
-def _line_path(values: list[float], minimum: float, maximum: float, width: float, height: float) -> str:
+def _line_path(
+    values: list[float], minimum: float, maximum: float, width: float, height: float
+) -> str:
     """Convert a series into an SVG line path."""
 
     if not values:
@@ -356,7 +367,6 @@ def _line_path(values: list[float], minimum: float, maximum: float, width: float
     return " ".join(points)
 
 
-
 def _histogram_svg(values: list[float], width: float, height: float) -> str:
     """Build histogram SVG content for study panes."""
 
@@ -368,7 +378,9 @@ def _histogram_svg(values: list[float], width: float, height: float) -> str:
     span = max(maximum - minimum, 0.0001)
     baseline = height - (((0.0 - minimum) / span) * height)
     bar_width = width / max(len(values), 1)
-    bars: list[str] = [f"<line x1='0' y1='{baseline:.2f}' x2='{width:.2f}' y2='{baseline:.2f}' stroke='#22303d' stroke-width='1'></line>"]
+    bars: list[str] = [
+        f"<line x1='0' y1='{baseline:.2f}' x2='{width:.2f}' y2='{baseline:.2f}' stroke='#22303d' stroke-width='1'></line>"
+    ]
     for index, value in enumerate(values):
         x = index * bar_width + (bar_width * 0.18)
         y = height - (((value - minimum) / span) * height)

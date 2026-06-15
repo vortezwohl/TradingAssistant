@@ -1,9 +1,10 @@
-"""定义市场数据接入层使用的输入输出契约。
+"""Input/output contracts for the market data access layer.
 
-该模块用于承载上游原始数据到系统内部结构之间的中间契约，包括：
-1. 标准化后的 symbol 表示；
-2. 统一的历史 bar 记录；
-3. WebSocket 订阅与消息封装。
+This module carries intermediate contracts between upstream raw data and
+system-internal structures, including:
+1. Normalized symbol representation;
+2. Unified historical bar records;
+3. WebSocket subscription and message encapsulation.
 """
 
 from __future__ import annotations
@@ -15,11 +16,11 @@ from typing import Any
 
 @dataclass(slots=True, frozen=True)
 class SymbolRef:
-    """描述统一后的标的引用。
+    """Describe a normalized instrument reference.
 
     Args:
-        region: 市场区域，例如 `HK`、`US`。
-        code: 原始代码，例如 `00700`、`AAPL`。
+        region: Market region, e.g. `HK`, `US`.
+        code: Raw code, e.g. `00700`, `AAPL`.
     """
 
     region: str
@@ -27,17 +28,17 @@ class SymbolRef:
 
     @property
     def symbol(self) -> str:
-        """返回统一 symbol 表示。
+        """Return normalized symbol representation.
 
         Returns:
-            `REGION.CODE` 形式的字符串。
+            String in `REGION.CODE` form.
         """
         return f"{self.region}.{self.code}"
 
 
 @dataclass(slots=True)
 class BarRecord:
-    """描述标准化后的 K 线记录。"""
+    """Describe a normalized K-line record."""
 
     symbol: str
     period: str
@@ -53,7 +54,7 @@ class BarRecord:
 
 @dataclass(slots=True)
 class MarketSnapshot:
-    """描述标准化后的快照行情。"""
+    """Describe a normalized snapshot quote."""
 
     symbol: str
     last_price: float | None
@@ -69,7 +70,7 @@ class MarketSnapshot:
 
 @dataclass(slots=True)
 class SubscriptionRequest:
-    """描述 WebSocket 订阅请求。"""
+    """Describe a WebSocket subscription request."""
 
     topic: str
     symbols: list[str]

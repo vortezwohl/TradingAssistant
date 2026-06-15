@@ -1,4 +1,4 @@
-"""定义 Reflex 项目的最小运行配置。"""
+"""Minimal runtime configuration for the Reflex project."""
 
 from __future__ import annotations
 

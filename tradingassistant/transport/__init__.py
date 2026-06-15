@@ -1,5 +1,6 @@
-"""承载 FastAPI 门面与推送通道逻辑。
+"""FastAPI facade and push channel logic.
 
-该子包未来用于实现 bootstrap REST、图表增量通道、列表行情通道、
-预警事件通道以及会话级订阅编排。
+This sub-package will implement bootstrap REST, chart increment channel,
+quote list channel, alert event channel, and session-level subscription
+orchestration.
 """

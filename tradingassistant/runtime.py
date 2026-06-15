@@ -1,4 +1,4 @@
-"""提供本地可启动的默认运行时装配入口。"""
+"""Default runtime assembly entry point for local startup."""
 
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ from tradingassistant.transport.app import MarketMonitorService, create_app
 
 
 class DemoHistoryGateway:
-    """提供本地演示历史数据。"""
+    """Provide local demo historical data."""
 
     def get_stock_history(
         self,
@@ -33,7 +33,7 @@ class DemoHistoryGateway:
         limit: int,
         end: str | None = None,
     ) -> list[RuntimeBar]:
-        """返回一组稳定的演示 K 线数据。"""
+        """Return a stable set of demo K-line data."""
         del end
         base_time = datetime(2026, 6, 7, 9, 30, tzinfo=timezone.utc)
         return [
@@ -55,7 +55,7 @@ class DemoHistoryGateway:
 
 @dataclass(slots=True)
 class AppRuntime:
-    """封装后端运行时依赖。"""
+    """Encapsulate backend runtime dependencies."""
 
     app: FastAPI
     service: MarketMonitorService
@@ -66,10 +66,10 @@ class AppRuntime:
 
 
 def build_default_runtime() -> AppRuntime:
-    """构造默认运行时对象。
+    """Build the default runtime object.
 
     Returns:
-        已完成装配的运行时对象。
+        Fully assembled runtime object.
     """
     cache_store = MemoryCacheStore()
     topic_bus = InMemoryTopicBus()
@@ -110,5 +110,5 @@ def build_default_runtime() -> AppRuntime:
 
 
 def create_default_app() -> FastAPI:
-    """返回默认 FastAPI 应用对象。"""
+    """Return the default FastAPI application object."""
     return build_default_runtime().app

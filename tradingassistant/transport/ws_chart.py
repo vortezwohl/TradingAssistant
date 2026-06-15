@@ -1,6 +1,7 @@
-﻿"""图表增量推送 WebSocket 路由。
+"""Chart increment push WebSocket route.
 
-该模块负责建立图表 K 线增量推送连接，处理客户端的 symbol + period 订阅/退订请求。
+This module establishes chart K-line increment push connections and handles
+client symbol + period subscribe/unsubscribe requests.
 """
 
 from __future__ import annotations
@@ -33,15 +34,15 @@ async def handle_chart_stream(
     topic_bus: TopicBus,
     service: Any,
 ) -> None:
-    """处理图表增量推送的完整生命周期。
+    """Handle the full lifecycle of chart increment push.
 
     Args:
-        websocket: WebSocket 连接。
-        session_id: 会话标识。
-        connections: 会话连接映射。
-        registry: 订阅注册表。
-        topic_bus: 主题总线。
-        service: MarketMonitorService 实例。
+        websocket: WebSocket connection.
+        session_id: Session identifier.
+        connections: Session connection mapping.
+        registry: Subscription registry.
+        topic_bus: Topic bus.
+        service: MarketMonitorService instance.
     """
 
     await websocket.accept()
@@ -57,7 +58,9 @@ async def handle_chart_stream(
             period = payload.get("period", "1m")
             topic = chart_topic(symbol, period)
             if action == "unsubscribe":
-                unsubscribe_topic(session_id, topic, connections, registry, topic_bus, service)
+                unsubscribe_topic(
+                    session_id, topic, connections, registry, topic_bus, service
+                )
                 await websocket.send_json(subscription_ack(action, topic))
                 continue
             subscribe_topic(

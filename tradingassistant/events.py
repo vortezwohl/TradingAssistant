@@ -1,8 +1,9 @@
-"""定义系统内部统一使用的领域事件模型。
+"""Unified domain event model for internal system use.
 
-该模块负责屏蔽上游数据源协议差异，把原始 REST / WebSocket 数据
-转换为后续模块可稳定依赖的标准化事件对象。所有下游模块都应该依赖
-这里的事件类型，而不是直接解析 iTick 原始 payload。
+This module abstracts upstream data source protocol differences and converts
+raw REST/WebSocket data into standardized event objects that downstream
+modules can reliably depend on. All downstream modules should depend on
+the event types defined here, rather than directly parsing raw iTick payloads.
 """
 
 from __future__ import annotations
@@ -14,16 +15,16 @@ from typing import Any
 
 
 def utc_now() -> datetime:
-    """返回当前 UTC 时间。
+    """Return the current UTC time.
 
     Returns:
-        当前带时区信息的 UTC 时间。
+        Current UTC time with timezone info.
     """
     return datetime.now(timezone.utc)
 
 
 class MarketEventType(str, Enum):
-    """统一定义系统支持的领域事件类别。"""
+    """Unified domain event type categories supported by the system."""
 
     TICK = "tick"
     QUOTE = "quote"
@@ -33,7 +34,7 @@ class MarketEventType(str, Enum):
 
 
 class ConnectionState(str, Enum):
-    """定义上游连接生命周期状态。"""
+    """Define upstream connection lifecycle states."""
 
     CONNECTING = "connecting"
     CONNECTED = "connected"
@@ -45,15 +46,15 @@ class ConnectionState(str, Enum):
 
 @dataclass(slots=True)
 class MarketEvent:
-    """所有市场事件的公共基类。
+    """Common base class for all market events.
 
     Args:
-        event_type: 事件类别。
-        symbol: 统一后的标的标识。
-        source: 事件来源名称，例如 `itick`。
-        event_time: 事件业务时间；若未提供则使用当前 UTC 时间。
-        received_at: 系统接收时间；默认使用当前 UTC 时间。
-        metadata: 额外的调试或来源上下文字段。
+        event_type: Event category.
+        symbol: Normalized instrument identifier.
+        source: Event source name, e.g. `itick`.
+        event_time: Business time of the event; defaults to current UTC time.
+        received_at: System receive time; defaults to current UTC time.
+        metadata: Additional debug or source context fields.
     """
 
     event_type: MarketEventType
@@ -66,7 +67,7 @@ class MarketEvent:
 
 @dataclass(slots=True)
 class TickEvent(MarketEvent):
-    """描述逐笔成交或逐笔驱动的事件。"""
+    """Describe a tick-by-tick trade or order-driven event."""
 
     price: float | None = None
     volume: float | None = None
@@ -74,13 +75,13 @@ class TickEvent(MarketEvent):
     direction: str | None = None
 
     def __post_init__(self) -> None:
-        """确保事件类型被固定为 tick。"""
+        """Ensure event type is fixed to tick."""
         self.event_type = MarketEventType.TICK
 
 
 @dataclass(slots=True)
 class QuoteEvent(MarketEvent):
-    """描述快照行情事件。"""
+    """Describe a snapshot quote event."""
 
     last_price: float | None = None
     open_price: float | None = None
@@ -91,13 +92,13 @@ class QuoteEvent(MarketEvent):
     turnover: float | None = None
 
     def __post_init__(self) -> None:
-        """确保事件类型被固定为 quote。"""
+        """Ensure event type is fixed to quote."""
         self.event_type = MarketEventType.QUOTE
 
 
 @dataclass(slots=True)
 class KlineEvent(MarketEvent):
-    """描述 K 线更新事件。"""
+    """Describe a K-line (candlestick) update event."""
 
     period: str = "1m"
     open_price: float | None = None
@@ -110,29 +111,29 @@ class KlineEvent(MarketEvent):
     provisional: bool = True
 
     def __post_init__(self) -> None:
-        """确保事件类型被固定为 kline。"""
+        """Ensure event type is fixed to kline."""
         self.event_type = MarketEventType.KLINE
 
 
 @dataclass(slots=True)
 class DepthEvent(MarketEvent):
-    """描述盘口深度事件。"""
+    """Describe a depth-of-market event."""
 
     bids: list[tuple[float, float]] = field(default_factory=list)
     asks: list[tuple[float, float]] = field(default_factory=list)
 
     def __post_init__(self) -> None:
-        """确保事件类型被固定为 depth。"""
+        """Ensure event type is fixed to depth."""
         self.event_type = MarketEventType.DEPTH
 
 
 @dataclass(slots=True)
 class ConnectionEvent(MarketEvent):
-    """描述上游连接状态事件。"""
+    """Describe an upstream connection status event."""
 
     state: ConnectionState = ConnectionState.CONNECTING
     detail: str | None = None
 
     def __post_init__(self) -> None:
-        """确保事件类型被固定为 connection。"""
+        """Ensure event type is fixed to connection."""
         self.event_type = MarketEventType.CONNECTION
