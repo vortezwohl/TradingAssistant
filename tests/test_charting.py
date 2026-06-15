@@ -11,11 +11,11 @@ from __future__ import annotations
 import unittest
 from datetime import datetime, timedelta, timezone
 
-from tradingassistant.charting.aggregator import BarAggregator
-from tradingassistant.charting.history import HistoryBackfillService
-from tradingassistant.events import QuoteEvent, TickEvent
-from tradingassistant.infrastructure.cache import MemoryCacheStore
-from tradingassistant.market_data.contracts import BarRecord
+from tradingassistant.backend.charting.aggregator import BarAggregator
+from tradingassistant.backend.charting.history import HistoryBackfillService
+from tradingassistant.backend.events import QuoteEvent, TickEvent
+from tradingassistant.backend.infrastructure.cache import MemoryCacheStore
+from tradingassistant.backend.market_data.contracts import BarRecord
 
 
 class FakeHistoryGateway:

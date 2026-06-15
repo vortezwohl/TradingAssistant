@@ -12,10 +12,13 @@ import json
 import unittest
 from unittest.mock import patch
 
-from tradingassistant.events import ConnectionState
-from tradingassistant.market_data.contracts import SubscriptionRequest
-from tradingassistant.market_data.gateway import ITickGatewayError, ITickMarketGateway
-from tradingassistant.market_data.normalizer import (
+from tradingassistant.backend.events import ConnectionState
+from tradingassistant.backend.market_data.contracts import SubscriptionRequest
+from tradingassistant.backend.market_data.gateway import (
+    ITickGatewayError,
+    ITickMarketGateway,
+)
+from tradingassistant.backend.market_data.normalizer import (
     connection_event,
     kline_event_from_bar,
     normalize_history_bar,

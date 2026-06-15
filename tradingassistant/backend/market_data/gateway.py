@@ -15,9 +15,12 @@ from typing import Any
 
 from itick.sdk import Client as ITickClient
 
-from tradingassistant.events import ConnectionEvent, ConnectionState
-from tradingassistant.market_data.contracts import BarRecord, SubscriptionRequest
-from tradingassistant.market_data.normalizer import (
+from tradingassistant.backend.events import ConnectionEvent, ConnectionState
+from tradingassistant.backend.market_data.contracts import (
+    BarRecord,
+    SubscriptionRequest,
+)
+from tradingassistant.backend.market_data.normalizer import (
     connection_event,
     normalize_history_bar,
 )

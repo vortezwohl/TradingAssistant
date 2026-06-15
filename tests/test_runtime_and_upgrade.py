@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import unittest
 
-from tradingassistant.charting.keys import (
+from tradingassistant.backend.charting.keys import (
     alerts_topic,
     bar_history_key,
     chart_snapshot_key,
@@ -17,13 +17,13 @@ from tradingassistant.charting.keys import (
     indicator_snapshot_key,
     quotes_topic,
 )
-from tradingassistant.diagnostics import RuntimeMetrics
-from tradingassistant.infrastructure.cache import MemoryCacheStore
-from tradingassistant.infrastructure.subscription_registry import (
+from tradingassistant.backend.diagnostics import RuntimeMetrics
+from tradingassistant.backend.infrastructure.cache import MemoryCacheStore
+from tradingassistant.backend.infrastructure.subscription_registry import (
     InMemorySubscriptionRegistry,
 )
-from tradingassistant.infrastructure.topic_bus import InMemoryTopicBus
-from tradingassistant.redis_upgrade import RedisUpgradePlan
+from tradingassistant.backend.infrastructure.topic_bus import InMemoryTopicBus
+from tradingassistant.backend.redis_upgrade import RedisUpgradePlan
 
 
 class RuntimeMetricsTests(unittest.TestCase):

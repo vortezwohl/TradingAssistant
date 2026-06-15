@@ -9,7 +9,7 @@ import sys
 import time
 from pathlib import Path
 
-from tradingassistant.runtime import create_default_app
+from tradingassistant.backend.runtime import create_default_app
 from tradingassistant.settings import (
     API_BASE_URL,
     APP_BACKEND_HOST,

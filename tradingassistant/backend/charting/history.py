@@ -9,9 +9,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from tradingassistant.infrastructure.cache import CacheStore
-from tradingassistant.market_data.contracts import BarRecord
-from tradingassistant.market_data.gateway import ITickMarketGateway
+from tradingassistant.backend.infrastructure.cache import CacheStore
+from tradingassistant.backend.market_data.contracts import BarRecord
+from tradingassistant.backend.market_data.gateway import ITickMarketGateway
 
 from .keys import bar_history_key
 

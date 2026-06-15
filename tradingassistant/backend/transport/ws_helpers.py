@@ -14,8 +14,13 @@ from typing import Any
 
 from fastapi import WebSocket
 
-from tradingassistant.infrastructure.subscription_registry import SubscriptionRegistry
-from tradingassistant.infrastructure.topic_bus import SubscriptionHandle, TopicBus
+from tradingassistant.backend.infrastructure.subscription_registry import (
+    SubscriptionRegistry,
+)
+from tradingassistant.backend.infrastructure.topic_bus import (
+    SubscriptionHandle,
+    TopicBus,
+)
 
 
 @dataclass(slots=True)

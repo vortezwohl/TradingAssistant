@@ -21,20 +21,22 @@ from typing import Any
 from fastapi import FastAPI, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 
-from tradingassistant.charting.history import HistoryBackfillService
-from tradingassistant.charting.keys import (
+from tradingassistant.backend.charting.history import HistoryBackfillService
+from tradingassistant.backend.charting.keys import (
     alerts_topic,
     chart_snapshot_key,
     chart_topic,
     quotes_topic,
 )
-from tradingassistant.charting.models import ChartSnapshot, RuntimeBar
-from tradingassistant.diagnostics import RuntimeMetrics
-from tradingassistant.events import KlineEvent, QuoteEvent
-from tradingassistant.indicators.engine import IncrementalIndicatorEngine
-from tradingassistant.infrastructure.cache import CacheStore
-from tradingassistant.infrastructure.subscription_registry import SubscriptionRegistry
-from tradingassistant.infrastructure.topic_bus import TopicBus
+from tradingassistant.backend.charting.models import ChartSnapshot, RuntimeBar
+from tradingassistant.backend.diagnostics import RuntimeMetrics
+from tradingassistant.backend.events import KlineEvent, QuoteEvent
+from tradingassistant.backend.indicators.engine import IncrementalIndicatorEngine
+from tradingassistant.backend.infrastructure.cache import CacheStore
+from tradingassistant.backend.infrastructure.subscription_registry import (
+    SubscriptionRegistry,
+)
+from tradingassistant.backend.infrastructure.topic_bus import TopicBus
 
 from .ws_alert import handle_alert_stream
 from .ws_chart import handle_chart_stream

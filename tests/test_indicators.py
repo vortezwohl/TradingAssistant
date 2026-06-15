@@ -5,8 +5,8 @@ from __future__ import annotations
 import unittest
 from datetime import datetime, timedelta, timezone
 
-from tradingassistant.charting.models import RuntimeBar
-from tradingassistant.indicators.engine import IncrementalIndicatorEngine
+from tradingassistant.backend.charting.models import RuntimeBar
+from tradingassistant.backend.indicators.engine import IncrementalIndicatorEngine
 
 
 def build_bars(count: int = 30) -> list[RuntimeBar]:

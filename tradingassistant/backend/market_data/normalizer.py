@@ -12,14 +12,18 @@ from dataclasses import asdict
 from datetime import datetime, timezone
 from typing import Any
 
-from tradingassistant.events import (
+from tradingassistant.backend.events import (
     ConnectionEvent,
     ConnectionState,
     KlineEvent,
     QuoteEvent,
     TickEvent,
 )
-from tradingassistant.market_data.contracts import BarRecord, MarketSnapshot, SymbolRef
+from tradingassistant.backend.market_data.contracts import (
+    BarRecord,
+    MarketSnapshot,
+    SymbolRef,
+)
 
 
 def normalize_symbol(region: str, code: str) -> str:

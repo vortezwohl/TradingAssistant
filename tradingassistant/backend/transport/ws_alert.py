@@ -1,7 +1,7 @@
-"""Chart increment push WebSocket route.
+"""Alert event push WebSocket route.
 
-This module establishes chart K-line increment push connections and handles
-client symbol + period subscribe/unsubscribe requests.
+This module establishes alert event push connections and handles client
+subscribe/unsubscribe requests for alert streams by name.
 """
 
 from __future__ import annotations
@@ -12,9 +12,11 @@ from typing import Any
 
 from fastapi import WebSocket, WebSocketDisconnect
 
-from tradingassistant.charting.keys import chart_topic
-from tradingassistant.infrastructure.subscription_registry import SubscriptionRegistry
-from tradingassistant.infrastructure.topic_bus import TopicBus
+from tradingassistant.backend.charting.keys import alerts_topic
+from tradingassistant.backend.infrastructure.subscription_registry import (
+    SubscriptionRegistry,
+)
+from tradingassistant.backend.infrastructure.topic_bus import TopicBus
 
 from .ws_helpers import (
     SessionConnection,
@@ -25,7 +27,7 @@ from .ws_helpers import (
 )
 
 
-async def handle_chart_stream(
+async def handle_alert_stream(
     *,
     websocket: WebSocket,
     session_id: str,
@@ -34,7 +36,7 @@ async def handle_chart_stream(
     topic_bus: TopicBus,
     service: Any,
 ) -> None:
-    """Handle the full lifecycle of chart increment push.
+    """Handle the full lifecycle of alert event push.
 
     Args:
         websocket: WebSocket connection.
@@ -52,11 +54,13 @@ async def handle_chart_stream(
     try:
         while True:
             raw = await websocket.receive_text()
-            payload = json.loads(raw)
+            payload = (
+                json.loads(raw)
+                if raw.strip().startswith("{")
+                else {"action": "subscribe"}
+            )
             action = payload.get("action", "subscribe")
-            symbol = payload["symbol"]
-            period = payload.get("period", "1m")
-            topic = chart_topic(symbol, period)
+            topic = alerts_topic(payload.get("name", "default"))
             if action == "unsubscribe":
                 unsubscribe_topic(
                     session_id, topic, connections, registry, topic_bus, service

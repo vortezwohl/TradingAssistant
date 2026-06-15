@@ -12,9 +12,11 @@ from typing import Any
 
 from fastapi import WebSocket, WebSocketDisconnect
 
-from tradingassistant.charting.keys import quotes_topic
-from tradingassistant.infrastructure.subscription_registry import SubscriptionRegistry
-from tradingassistant.infrastructure.topic_bus import TopicBus
+from tradingassistant.backend.charting.keys import quotes_topic
+from tradingassistant.backend.infrastructure.subscription_registry import (
+    SubscriptionRegistry,
+)
+from tradingassistant.backend.infrastructure.topic_bus import TopicBus
 
 from .ws_helpers import (
     SessionConnection,

@@ -14,7 +14,7 @@ from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from tradingassistant.events import QuoteEvent, TickEvent
+    from tradingassistant.backend.events import QuoteEvent, TickEvent
 
 from .models import RuntimeBar
 

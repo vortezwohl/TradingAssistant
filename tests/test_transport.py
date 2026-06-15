@@ -8,17 +8,17 @@ from datetime import datetime, timedelta, timezone
 
 from fastapi.testclient import TestClient
 
-from tradingassistant.charting.history import HistoryBackfillService
-from tradingassistant.charting.models import RuntimeBar
-from tradingassistant.diagnostics import RuntimeMetrics
-from tradingassistant.events import KlineEvent, QuoteEvent
-from tradingassistant.indicators.engine import IncrementalIndicatorEngine
-from tradingassistant.infrastructure.cache import MemoryCacheStore
-from tradingassistant.infrastructure.subscription_registry import (
+from tradingassistant.backend.charting.history import HistoryBackfillService
+from tradingassistant.backend.charting.models import RuntimeBar
+from tradingassistant.backend.diagnostics import RuntimeMetrics
+from tradingassistant.backend.events import KlineEvent, QuoteEvent
+from tradingassistant.backend.indicators.engine import IncrementalIndicatorEngine
+from tradingassistant.backend.infrastructure.cache import MemoryCacheStore
+from tradingassistant.backend.infrastructure.subscription_registry import (
     InMemorySubscriptionRegistry,
 )
-from tradingassistant.infrastructure.topic_bus import InMemoryTopicBus
-from tradingassistant.transport.app import MarketMonitorService, create_app
+from tradingassistant.backend.infrastructure.topic_bus import InMemoryTopicBus
+from tradingassistant.backend.transport.app import MarketMonitorService, create_app
 
 
 class FakeGateway:

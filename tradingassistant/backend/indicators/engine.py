@@ -17,7 +17,7 @@ from typing import Any
 import pandas as pd
 from opentrade.enrichment.indicators import enrich_history_frame
 
-from tradingassistant.charting.models import RuntimeBar
+from tradingassistant.backend.charting.models import RuntimeBar
 
 
 def safe_float(value: Any) -> float | None:

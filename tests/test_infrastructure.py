@@ -10,11 +10,11 @@ from __future__ import annotations
 
 import unittest
 
-from tradingassistant.infrastructure.cache import MemoryCacheStore
-from tradingassistant.infrastructure.subscription_registry import (
+from tradingassistant.backend.infrastructure.cache import MemoryCacheStore
+from tradingassistant.backend.infrastructure.subscription_registry import (
     InMemorySubscriptionRegistry,
 )
-from tradingassistant.infrastructure.topic_bus import InMemoryTopicBus
+from tradingassistant.backend.infrastructure.topic_bus import InMemoryTopicBus
 
 
 class MemoryCacheStoreTests(unittest.TestCase):

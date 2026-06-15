@@ -10,7 +10,7 @@ from __future__ import annotations
 import unittest
 from datetime import datetime
 
-from tradingassistant.events import (
+from tradingassistant.backend.events import (
     ConnectionEvent,
     ConnectionState,
     DepthEvent,
