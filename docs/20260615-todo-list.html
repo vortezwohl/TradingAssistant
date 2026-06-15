@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TradingAssistant Frontend TODO List — itick 能力边界与待实现项</title>
+<style>
+    :root {
+        --bg: #0b1118;
+        --surface: #111922;
+        --panel: #15202b;
+        --text: #dce4ec;
+        --text-soft: #7d8b99;
+        --green: #42d48f;
+        --red: #ff6f61;
+        --amber: #ffb347;
+        --blue: #6aa7ff;
+        --cyan: #6fd4e6;
+        --line: #1e2d3d;
+        --line-strong: #2a3a4f;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
+        line-height: 1.7;
+    }
+    .shell { max-width: 1100px; margin: 0 auto; padding: 36px 24px 60px; }
+    .page-title {
+        font-size: 26px;
+        font-weight: 700;
+        color: var(--amber);
+        border-bottom: 2px solid var(--line-strong);
+        padding-bottom: 16px;
+        margin-bottom: 8px;
+    }
+    .page-meta {
+        font-size: 12px;
+        color: var(--text-soft);
+        margin-bottom: 28px;
+    }
+    .intro-block {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        padding: 20px 24px;
+        margin-bottom: 28px;
+    }
+    .intro-block p { margin-bottom: 10px; font-size: 14px; }
+    .intro-block p:last-child { margin-bottom: 0; }
+    h2 {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--blue);
+        margin: 36px 0 14px;
+        padding-bottom: 6px;
+        border-bottom: 1px solid var(--line);
+    }
+    h3 {
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--cyan);
+        margin: 22px 0 10px;
+    }
+    .section-desc {
+        font-size: 13px;
+        color: var(--text-soft);
+        margin-bottom: 14px;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20px;
+        font-size: 13px;
+    }
+    th, td {
+        text-align: left;
+        padding: 10px 14px;
+        border: 1px solid var(--line);
+    }
+    th {
+        background: var(--panel);
+        color: var(--text-soft);
+        font-weight: 600;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+    td { background: var(--surface); }
+    tr:hover td { background: #162231; }
+    .badge {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 3px;
+        font-size: 11px;
+        font-weight: 600;
+        margin-right: 4px;
+    }
+    .badge-yes { background: #1a3a2a; color: var(--green); }
+    .badge-no  { background: #3a1a1a; color: var(--red); }
+    .badge-partial { background: #3a2e1a; color: var(--amber); }
+    .badge-mock { background: #1a2a3a; color: var(--blue); }
+    .badge-done { background: #1a3a2a; color: var(--green); }
+    .badge-todo { background: #3a1a1a; color: var(--red); }
+    .note {
+        font-size: 12px;
+        color: var(--text-soft);
+        background: var(--panel);
+        border-left: 3px solid var(--amber);
+        padding: 10px 14px;
+        margin: 12px 0;
+        border-radius: 0 4px 4px 0;
+    }
+    .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 14px;
+        margin-bottom: 24px;
+    }
+    .summary-card {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        padding: 18px 20px;
+        text-align: center;
+    }
+    .summary-card .num {
+        font-size: 36px;
+        font-weight: 700;
+        line-height: 1.2;
+    }
+    .summary-card .label {
+        font-size: 12px;
+        color: var(--text-soft);
+        margin-top: 4px;
+    }
+    .num-green  { color: var(--green); }
+    .num-red    { color: var(--red); }
+    .num-amber  { color: var(--amber); }
+    .num-blue   { color: var(--blue); }
+    hr {
+        border: none;
+        border-top: 1px solid var(--line);
+        margin: 28px 0;
+    }
+    footer {
+        font-size: 11px;
+        color: var(--text-soft);
+        text-align: center;
+        margin-top: 40px;
+        padding-top: 16px;
+        border-top: 1px solid var(--line);
+    }
+</style>
+</head>
+<body>
+<div class="shell">
+
+<h1 class="page-title">TradingAssistant Frontend TODO List</h1>
+<p class="page-meta">
+    生成日期：2026-06-15 &nbsp;|&nbsp; 基于 itick SDK v0.1.0 + OpenTrade v1.1.0 &nbsp;|&nbsp;
+    当前前端状态：<span class="badge badge-mock">100% Mock</span>
+</p>
+
+<div class="intro-block">
+    <p><strong>核心结论：</strong>itick SDK 是纯粹的行情数据供应商——它通过 REST + WebSocket 提供股票/债券/基金/外汇/加密货币的
+    tick（逐笔）、quote（报价）、depth（深度）、kline（K线）裸数据。</p>
+    <p>本项目的 <strong>frontend 是一套完整的多资产交易终端分析系统</strong>，在 itick 提供的裸数据之上构建了
+    技术指标计算、多周期聚合、投研分析框架、AI 市场解读、专业图表渲染、跨资产宏观仪表板和终端级交互体验共 7 个增值层。</p>
+    <p>以下将所有功能拆分为<strong>「itick 原生支持」</strong>和<strong>「需自行实现」</strong>两大类，每项附当前完成状态。</p>
+</div>
+
+<!-- ====== 总览统计 ====== -->
+<h2>📊 总览统计</h2>
+<div class="summary-grid">
+    <div class="summary-card">
+        <div class="num num-green">5</div>
+        <div class="label">itick 原生支持项</div>
+    </div>
+    <div class="summary-card">
+        <div class="num num-amber">3</div>
+        <div class="label">部分支持 / 需组合查询</div>
+    </div>
+    <div class="summary-card">
+        <div class="num num-red">28</div>
+        <div class="label">需自行实现项</div>
+    </div>
+    <div class="summary-card">
+        <div class="num num-blue">8</div>
+        <div class="label">后端已实现 / 前端待接入</div>
+    </div>
+</div>
+
+<!-- ====== PART 1: itick 原生支持 ====== -->
+<h2>✅ 第一部分：itick SDK 原生支持（无需额外实现）</h2>
+<p class="section-desc">以下能力直接调用 itick SDK 即可获得，不需自行开发数据获取逻辑。</p>
+
+<table>
+    <thead>
+        <tr>
+            <th style="width:5%">#</th>
+            <th style="width:28%">功能</th>
+            <th style="width:35%">itick 对应 API</th>
+            <th style="width:12%">状态</th>
+            <th style="width:20%">说明</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>1</td>
+            <td>股票实时报价</td>
+            <td><code>get_stock_quote / get_stock_quotes</code></td>
+            <td><span class="badge badge-yes">itick 原生</span></td>
+            <td>返回最新价、开盘、最高、最低、昨收、成交量</td>
+        </tr>
+        <tr>
+            <td>2</td>
+            <td>股票历史 K 线</td>
+            <td><code>get_stock_kline / get_stock_klines</code></td>
+            <td><span class="badge badge-yes">itick 原生</span></td>
+            <td>返回 OHLCV 结构，支持 period / limit / end 参数</td>
+        </tr>
+        <tr>
+            <td>3</td>
+            <td>市场深度数据</td>
+            <td><code>get_stock_depth / get_stock_depths</code></td>
+            <td><span class="badge badge-yes">itick 原生</span></td>
+            <td>返回买卖盘口档位数据</td>
+        </tr>
+        <tr>
+            <td>4</td>
+            <td>逐笔成交数据</td>
+            <td><code>get_stock_tick / get_stock_ticks</code></td>
+            <td><span class="badge badge-yes">itick 原生</span></td>
+            <td>逐笔价格、成交量、方向</td>
+        </tr>
+        <tr>
+            <td>5</td>
+            <td>实时 WebSocket 推送</td>
+            <td><code>connect_stock_websocket + subscribe</code></td>
+            <td><span class="badge badge-yes">itick 原生</span></td>
+            <td>支持 tick/quote/kline/depth 四类 topic 订阅</td>
+        </tr>
+    </tbody>
+</table>
+
+<p class="note">
+    <strong>注意：</strong>以上 5 项仅指"数据获取"环节。数据拿到后仍需经过 normalizer →
+    事件模型转换 → 聚合 → 指标计算 → 渲染等链路才能真正呈现在 frontend 上。
+    这些链路中的大部分步骤属于"需自行实现"范畴。
+</p>
+
+<hr>
+
+<!-- ====== PART 2: 跨资产宏观数据 ====== -->
+<h2>⚠️ 第二部分：通过组合 itick 查询可获取（需明确代码映射）</h2>
+<p class="section-desc">功能本身在 itick API 能力范围内，但需要跨资产类别查询或配置具体代码映射。</p>
+
+<table>
+    <thead>
+        <tr>
+            <th style="width:5%">#</th>
+            <th style="width:28%">功能</th>
+            <th style="width:35%">itick 对应 API</th>
+            <th style="width:12%">状态</th>
+            <th style="width:20%">说明</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>1</td>
+            <td>Top Bar 宏观指标条 (UST10Y / DXY)</td>
+            <td><code>get_bond_quote</code> + <code>get_forex_quote</code></td>
+            <td><span class="badge badge-partial">需组合</span></td>
+            <td>需确定各指标对应的 region+code；当前为硬编码 mock 值</td>
+        </tr>
+        <tr>
+            <td>2</td>
+            <td>商品期货 (WTI / Gold)</td>
+            <td>itick 无商品期货端点</td>
+            <td><span class="badge badge-no">需额外数据源</span></td>
+            <td>itick 支持股票/债券/基金/外汇/加密货币，不含商品期货</td>
+        </tr>
+        <tr>
+            <td>3</td>
+            <td>VIX 恐慌指数</td>
+            <td>需要美股指数衍生品数据</td>
+            <td><span class="badge badge-no">需额外数据源</span></td>
+            <td>VIX 是 CBOE 波动率指数，itick 未明确支持</td>
+        </tr>
+    </tbody>
+</table>
+
+<p class="note">
+    <strong>建议：</strong>UST10Y/DXY 可通过 itick 获取；WTI/Gold/VIX 需要评估是否引入额外数据源（如 yfinance、Alpha Vantage）
+    或暂时保持 mock。
+</p>
+
+<hr>
+
+<!-- ====== PART 3: 需自行实现 ====== -->
+<h2>🔧 第三部分：需自行实现（itick 无法提供的能力）</h2>
+<p class="section-desc">按架构层次排列，从底层数据加工到顶层智能分析。每项标注当前实现状态和优先级建议。</p>
+
+<!-- 3.1 数据聚合层 -->
+<h3>3.1 数据聚合与加工层</h3>
+
+<table>
+    <thead>
+        <tr>
+            <th style="width:5%">#</th>
+            <th style="width:32%">TODO 项</th>
+            <th style="width:28%">当前状态</th>
+            <th style="width:10%">优先级</th>
+            <th style="width:25%">依赖 / 备注</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>1</td>
+            <td><strong>多周期 K 线聚合</strong>（从 1m 合成为 5m/15m/30m/60m/1H/4H/1D/1W/1MO/1Y）</td>
+            <td><span class="badge badge-done">后端已实现</span> <code>BarAggregator</code></td>
+            <td>P0</td>
+            <td>后端 aggregator.py 完成；frontend 仍用 mock，<strong>待接入</strong></td>
+        </tr>
+        <tr>
+            <td>2</td>
+            <td><strong>实时 Bar 生成</strong>（从 tick/quote 事件增量更新 forming bar）</td>
+            <td><span class="badge badge-done">后端已实现</span></td>
+            <td>P0</td>
+            <td>依赖 WebSocket 实时推送；<strong>前端待接入</strong></td>
+        </tr>
+        <tr>
+            <td>3</td>
+            <td><strong>涨跌幅计算</strong>（基于 prev_close 的绝对/百分比变化）</td>
+            <td><span class="badge badge-mock">前端 mock</span></td>
+            <td>P0</td>
+            <td>itick quote 返回 prev_close；计算逻辑简单</td>
+        </tr>
+        <tr>
+            <td>4</td>
+            <td><strong>成交量紧凑格式化</strong>（人可读的 K/M/B 单位）</td>
+            <td><span class="badge badge-done">已实现</span> <code>compact_volume()</code></td>
+            <td>-</td>
+            <td>纯工具函数，无需改动</td>
+        </tr>
+        <tr>
+            <td>5</td>
+            <td><strong>订单簿 10 档重建</strong>（从原始深度数据构造买卖盘）</td>
+            <td><span class="badge badge-mock">前端 mock</span></td>
+            <td>P1</td>
+            <td>需接入 itick depth WebSocket 推送</td>
+        </tr>
+        <tr>
+            <td>6</td>
+            <td><strong>时间&销售记录 (Tape)</strong>（逐笔成交时间序列）</td>
+            <td><span class="badge badge-mock">前端 mock</span></td>
+            <td>P1</td>
+            <td>需接入 itick tick WebSocket 推送</td>
+        </tr>
+    </tbody>
+</table>
+
+<!-- 3.2 技术指标层 -->
+<h3>3.2 技术指标计算层</h3>
+
+<table>
+    <thead>
+        <tr>
+            <th style="width:5%">#</th>
+            <th style="width:32%">TODO 项</th>
+            <th style="width:28%">当前状态</th>
+            <th style="width:10%">优先级</th>
+            <th style="width:25%">依赖 / 备注</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>7</td>
+            <td><strong>MA 简单移动平均</strong>（MA5 / MA20 / MA60）</td>
+            <td><span class="badge badge-done">后端已实现</span> + <span class="badge badge-mock">前端 mock</span></td>
+            <td>P0</td>
+            <td>后端 RollingWindow + IndicatorEngine；<strong>前端待接入</strong></td>
+        </tr>
+        <tr>
+            <td>8</td>
+            <td><strong>EMA 指数移动平均</strong>（EMA12 / EMA26）</td>
+            <td><span class="badge badge-done">后端已实现</span> + <span class="badge badge-mock">前端 mock</span></td>
+            <td>P0</td>
+            <td>后端 IndicatorEngine._ema_next()；<strong>前端待接入</strong></td>
+        </tr>
+        <tr>
+            <td>9</td>
+            <td><strong>MACD</strong>（DIF / DEA / 柱状图）</td>
+            <td><span class="badge badge-done">后端已实现</span> + <span class="badge badge-mock">前端 mock</span></td>
+            <td>P0</td>
+            <td>基于 EMA12/EMA26/DEA9；<strong>前端待接入</strong></td>
+        </tr>
+        <tr>
+            <td>10</td>
+            <td><strong>RSI14</strong>（相对强弱指数）</td>
+            <td><span class="badge badge-done">后端已实现</span> + <span class="badge badge-mock">前端 mock</span></td>
+            <td>P0</td>
+            <td>基于 avg_gain/avg_loss；<strong>前端待接入</strong></td>
+        </tr>
+        <tr>
+            <td>11</td>
+            <td><strong>布林带</strong>（上轨 / 中轨 / 下轨，20 周期 + 2σ）</td>
+            <td><span class="badge badge-done">后端已实现</span> + <span class="badge badge-mock">前端 mock</span></td>
+            <td>P0</td>
+            <td>基于 boll_window mean/std；<strong>前端待接入</strong></td>
+        </tr>
+        <tr>
+            <td>12</td>
+            <td><strong>ATR14</strong>（平均真实波幅）</td>
+            <td><span class="badge badge-mock">仅前端 mock</span></td>
+            <td>P1</td>
+            <td>需在 IndicatorEngine 中补充 ATR 计算</td>
+        </tr>
+        <tr>
+            <td>13</td>
+            <td><strong>VWAP</strong>（成交量加权均价）</td>
+            <td><span class="badge badge-mock">仅前端 mock</span></td>
+            <td>P1</td>
+            <td>需在 IndicatorEngine 中补充 VWAP 计算</td>
+        </tr>
+        <tr>
+            <td>14</td>
+            <td><strong>OBV</strong>（能量潮）</td>
+            <td><span class="badge badge-mock">仅前端 mock</span></td>
+            <td>P1</td>
+            <td>需在 IndicatorEngine 中补充 OBV 计算</td>
+        </tr>
+    </tbody>
+</table>
+
+<!-- 3.3 图表渲染层 -->
+<h3>3.3 SVG 图表渲染层</h3>
+
+<table>
+    <thead>
+        <tr>
+            <th style="width:5%">#</th>
+            <th style="width:32%">TODO 项</th>
+            <th style="width:28%">当前状态</th>
+            <th style="width:10%">优先级</th>
+            <th style="width:25%">依赖 / 备注</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>15</td>
+            <td><strong>K 线蜡烛图 SVG 渲染</strong></td>
+            <td><span class="badge badge-mock">前端 mock 数据</span></td>
+            <td>P0</td>
+            <td>渲染引擎 (<code>renders.py</code>) 已就绪；需接入真实 OHLCV 数据</td>
+        </tr>
+        <tr>
+            <td>16</td>
+            <td><strong>覆盖指标线渲染</strong>（MA/EMA/BOLL/VWAP 叠加到主图）</td>
+            <td><span class="badge badge-mock">前端 mock 数据</span></td>
+            <td>P0</td>
+            <td>渲染逻辑就绪；需真实指标计算值</td>
+        </tr>
+        <tr>
+            <td>17</td>
+            <td><strong>技术指标副图 SVG</strong>（MACD 柱状图 / RSI 线图 / OBV 柱状图）</td>
+            <td><span class="badge badge-mock">前端 mock 数据</span></td>
+            <td>P0</td>
+            <td>3 个 study pane 的 <code>_line_path / _histogram_svg</code> 已就绪</td>
+        </tr>
+        <tr>
+            <td>18</td>
+            <td><strong>深度可视化模式切换</strong>（Ladder / Profile / Imbalance）</td>
+            <td><span class="badge badge-mock">前端 mock 数据</span></td>
+            <td>P1</td>
+            <td>三种视图的计算和渲染逻辑已就绪</td>
+        </tr>
+        <tr>
+            <td>19</td>
+            <td><strong>图表十字光标交互</strong>（悬停详情卡 / 自适应定位）</td>
+            <td><span class="badge badge-done">前端已实现</span></td>
+            <td>-</td>
+            <td>hover line + card transform 逻辑完整</td>
+        </tr>
+        <tr>
+            <td>20</td>
+            <td><strong>动态图例系统</strong>（叠加线图例 + 状态标签）</td>
+            <td><span class="badge badge-done">前端已实现</span></td>
+            <td>-</td>
+            <td>从 overlay 列表动态生成</td>
+        </tr>
+    </tbody>
+</table>
+
+<!-- 3.4 分析智能层 -->
+<h3>3.4 分析智能层</h3>
+
+<table>
+    <thead>
+        <tr>
+            <th style="width:5%">#</th>
+            <th style="width:32%">TODO 项</th>
+            <th style="width:28%">当前状态</th>
+            <th style="width:10%">优先级</th>
+            <th style="width:25%">依赖 / 备注</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>21</td>
+            <td><strong>六维分析路线框架</strong><br>Main / Momentum / Trend / Volatility / Orderflow / Micro</td>
+            <td><span class="badge badge-done">前端框架已实现</span><br><span class="badge badge-mock">数据为 mock</span></td>
+            <td>P1</td>
+            <td>每条路线关联特定指标面板和解读逻辑；路由已就绪</td>
+        </tr>
+        <tr>
+            <td>22</td>
+            <td><strong>AI 分析卡片</strong>（AI Regime Read）</td>
+            <td><span class="badge badge-mock">前端 mock 模板</span></td>
+            <td>P2</td>
+            <td>需要 LLM 集成（如 GPT-4/Claude）+ prompt engineering</td>
+        </tr>
+        <tr>
+            <td>23</td>
+            <td><strong>AI 分析卡片</strong>（Flow And Structure）</td>
+            <td><span class="badge badge-mock">前端 mock 模板</span></td>
+            <td>P2</td>
+            <td>同上</td>
+        </tr>
+        <tr>
+            <td>24</td>
+            <td><strong>AI 分析卡片</strong>（Risk Notes）</td>
+            <td><span class="badge badge-mock">前端 mock 模板</span></td>
+            <td>P2</td>
+            <td>同上</td>
+        </tr>
+        <tr>
+            <td>25</td>
+            <td><strong>交易信号生成引擎</strong>（4 类信号）</td>
+            <td><span class="badge badge-mock">前端 mock 固定文本</span></td>
+            <td>P2</td>
+            <td>需研发规则引擎或接入 LLM 研判</td>
+        </tr>
+        <tr>
+            <td>26</td>
+            <td><strong>盘口情绪评分</strong>（Net Bias / Flow Score / Vol Pulse）</td>
+            <td><span class="badge badge-mock">前端 mock 计算</span></td>
+            <td>P2</td>
+            <td>需定义综合评分模型</td>
+        </tr>
+        <tr>
+            <td>27</td>
+            <td><strong>市场新闻聚合</strong></td>
+            <td><span class="badge badge-mock">前端 mock 固定文本</span></td>
+            <td>P2</td>
+            <td>需引入新闻 API（如 Bloomberg/Reuters/财联社）</td>
+        </tr>
+    </tbody>
+</table>
+
+<!-- 3.5 UX / 交互层 -->
+<h3>3.5 UX 交互层</h3>
+
+<table>
+    <thead>
+        <tr>
+            <th style="width:5%">#</th>
+            <th style="width:32%">TODO 项</th>
+            <th style="width:28%">当前状态</th>
+            <th style="width:10%">优先级</th>
+            <th style="width:25%">依赖 / 备注</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>28</td>
+            <td><strong>终端暗色主题系统</strong>（完整交易配色 + 组件样式）</td>
+            <td><span class="badge badge-done">前端已实现</span></td>
+            <td>-</td>
+            <td><code>theme.py</code> 定义完整</td>
+        </tr>
+        <tr>
+            <td>29</td>
+            <td><strong>多面板布局引擎</strong>（左/中/右三栏 + 响应式）</td>
+            <td><span class="badge badge-done">前端已实现</span></td>
+            <td>-</td>
+            <td><code>app.py</code> 布局完整</td>
+        </tr>
+        <tr>
+            <td>30</td>
+            <td><strong>自选股管理</strong>（添加 / 删除 / 排序）</td>
+            <td><span class="badge badge-done">前端已实现</span></td>
+            <td>-</td>
+            <td>基于 Reflex State 管理，当前仅内存</td>
+        </tr>
+        <tr>
+            <td>31</td>
+            <td><strong>Tab / Route / Scale 切换</strong></td>
+            <td><span class="badge badge-done">前端已实现</span></td>
+            <td>-</td>
+            <td>所有交互事件已绑定</td>
+        </tr>
+    </tbody>
+</table>
+
+<hr>
+
+<!-- ====== PART 4: 接入路线图 ====== -->
+<h2>🗺️ 第四部分：推荐接入路线图（按优先级）</h2>
+
+<table>
+    <thead>
+        <tr>
+            <th style="width:5%">阶段</th>
+            <th style="width:45%">目标</th>
+            <th style="width:35%">涉及 TODO 项</th>
+            <th style="width:15%">预估工作量</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><strong>Phase 1</strong></td>
+            <td>打通真实数据链路 — 用 itick 真实 K 线替换 mock 蜡烛图</td>
+            <td>#1, #2, #15, #16, #17</td>
+            <td>中</td>
+        </tr>
+        <tr>
+            <td><strong>Phase 2</strong></td>
+            <td>接入真实技术指标 — 后端 IndicatorEngine 计算值驱动前端图表</td>
+            <td>#7, #8, #9, #10, #11</td>
+            <td>中</td>
+        </tr>
+        <tr>
+            <td><strong>Phase 3</strong></td>
+            <td>实时 WebSocket 管线 — 报价/深度/逐笔实时更新</td>
+            <td>#2, #3, #5, #6, #18</td>
+            <td>大</td>
+        </tr>
+        <tr>
+            <td><strong>Phase 4</strong></td>
+            <td>补充缺失指标 + 宏观数据</td>
+            <td>#12, #13, #14, #1~3 (Part 2)</td>
+            <td>小</td>
+        </tr>
+        <tr>
+            <td><strong>Phase 5</strong></td>
+            <td>AI 分析 + 信号 + 新闻</td>
+            <td>#21~27</td>
+            <td>大</td>
+        </tr>
+    </tbody>
+</table>
+
+<hr>
+
+<!-- ====== PART 5: 关键架构决策 ====== -->
+<h2>🏗️ 第五部分：关键架构决策</h2>
+
+<table>
+    <thead>
+        <tr>
+            <th style="width:8%">#</th>
+            <th style="width:30%">决策点</th>
+            <th style="width:32%">推荐方案</th>
+            <th style="width:30%">理由</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>A</td>
+            <td>技术指标计算在何处执行</td>
+            <td><strong>后端 IndicatorEngine</strong>（已实现）</td>
+            <td>后端已有完整引擎；前端只做渲染不做计算；保持单一数据源</td>
+        </tr>
+        <tr>
+            <td>B</td>
+            <td>前端如何获取后端数据</td>
+            <td><strong>通过 FastAPI WebSocket</strong>（transport/ws_chart.py / ws_quote.py）</td>
+            <td>后端已有完整 WebSocket 推送通道；前端需建立 Reflex 订阅</td>
+        </tr>
+        <tr>
+            <td>C</td>
+            <td>多周期 K 线来源</td>
+            <td><strong>后端 BarAggregator 从 1m 合成</strong></td>
+            <td>itick kline 参数 period 能力待确认；聚合器已稳定实现</td>
+        </tr>
+        <tr>
+            <td>D</td>
+            <td>WTI / Gold / VIX 数据源</td>
+            <td><strong>评估引入 yfinance 或保留 mock</strong></td>
+            <td>itick 不覆盖商品期货和波动率指数；取决于需求优先级</td>
+        </tr>
+        <tr>
+            <td>E</td>
+            <td>AI 分析后端</td>
+            <td><strong>集成 any-llm SDK 调用 GPT-4/Claude</strong></td>
+            <td>项目已有 any-llm-sdk skill；应复用而非自建</td>
+        </tr>
+        <tr>
+            <td>F</td>
+            <td>新闻数据源</td>
+            <td><strong>待定</strong>（外部 API 接入或暂保持 mock）</td>
+            <td>需评估数据成本和合规性</td>
+        </tr>
+    </tbody>
+</table>
+
+<hr>
+
+<footer>
+    TradingAssistant Frontend TODO List &nbsp;|&nbsp; 基于 itick SDK v0.1.0 + 项目 AGENTS.md 工程规约生成 &nbsp;|&nbsp; 2026-06-15
+</footer>
+
+</div>
+</body>
+</html>
