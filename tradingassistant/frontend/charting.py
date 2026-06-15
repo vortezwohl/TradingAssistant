@@ -49,6 +49,12 @@ MOVERS_TABS: tuple[tuple[str, str], ...] = (
     ("laggards", "Laggards"),
 )
 
+CHART_POINT_COUNT = 72
+PRIMARY_CHART_WIDTH = 1000.0
+PRIMARY_CHART_HEIGHT = 420.0
+STUDY_CHART_WIDTH = 320.0
+STUDY_CHART_HEIGHT = 130.0
+
 DEFAULT_WATCHLIST: list[str] = [
     "HK.00700",
     "US.NVDA",
@@ -369,6 +375,223 @@ def tone_from_number(value: float) -> str:
     return "flat"
 
 
+def _clamp_chart_index(index: int | None, length: int) -> int:
+    """Clamp a hover index to the available chart series length."""
+
+    if length <= 0:
+        return 0
+    if index is None:
+        return length - 1
+    return max(0, min(index, length - 1))
+
+
+def _format_study_value(value: float) -> str:
+    """Format route study values with a density suited for terminal readouts."""
+
+    absolute = abs(value)
+    if absolute >= 1_000_000:
+        return compact_volume(value)
+    if absolute >= 100:
+        return format_number(value, 1)
+    if absolute >= 10:
+        return format_number(value, 2)
+    return format_number(value, 3)
+
+
+def _build_overlay_legend_models(active_model: dict[str, Any], overlays: list[str]) -> list[dict[str, Any]]:
+    """Return the active overlay series used by legends and hover cards."""
+
+    analytics = active_model["analytics"]
+    items: list[dict[str, Any]] = []
+    if "MA" in overlays:
+        items.extend([
+            {"label": "MA5", "series": analytics["ma5"], "tone": "amber"},
+            {"label": "MA20", "series": analytics["ma20"], "tone": "blue"},
+            {"label": "MA60", "series": analytics["ma60"], "tone": "soft"},
+        ])
+    if "EMA" in overlays:
+        items.extend([
+            {"label": "EMA12", "series": analytics["ema12"], "tone": "up"},
+            {"label": "EMA26", "series": analytics["ema26"], "tone": "down"},
+        ])
+    if "BOLL" in overlays:
+        items.extend([
+            {"label": "BOLL U", "series": analytics["boll_upper"], "tone": "cyan"},
+            {"label": "BOLL L", "series": analytics["boll_lower"], "tone": "cyan"},
+        ])
+    if "VWAP" in overlays:
+        items.append({"label": "VWAP", "series": analytics["vwap"], "tone": "yellow"})
+    return items
+
+
+def _build_route_study_models(active_model: dict[str, Any], route: str) -> list[dict[str, Any]]:
+    """Build route study definitions with explicit series metadata."""
+
+    analytics = active_model["analytics"]
+    candles = active_model["candles"]
+    if route == "momentum":
+        return [
+            {
+                "name": "MACD Histogram",
+                "tag": "Impulse",
+                "foot": ["Signal spread", "Zero line watch"],
+                "series": analytics["macd_hist"],
+                "tone": "amber",
+                "histogram": True,
+            },
+            {
+                "name": "RSI 14",
+                "tag": "Momentum",
+                "foot": ["Range state", "Failure swing"],
+                "series": analytics["rsi14"],
+                "tone": "blue",
+                "histogram": False,
+            },
+            {
+                "name": "Signal Delta",
+                "tag": "Trigger",
+                "foot": ["Line minus signal", "Timing pressure"],
+                "series": [line - signal for line, signal in zip(analytics["macd_line"], analytics["macd_signal"])],
+                "tone": "green",
+                "histogram": False,
+            },
+        ]
+    if route == "trend":
+        return [
+            {
+                "name": "MA20 - MA60",
+                "tag": "Slope",
+                "foot": ["Trend spread", "Medium-term bias"],
+                "series": [fast - slow for fast, slow in zip(analytics["ma20"], analytics["ma60"])],
+                "tone": "amber",
+                "histogram": False,
+            },
+            {
+                "name": "EMA12 - EMA26",
+                "tag": "Pullback",
+                "foot": ["Fast versus slow", "Continuation risk"],
+                "series": [fast - slow for fast, slow in zip(analytics["ema12"], analytics["ema26"])],
+                "tone": "blue",
+                "histogram": False,
+            },
+            {
+                "name": "MA5 - MA20",
+                "tag": "Front End",
+                "foot": ["Near-term spread", "Trend firmness"],
+                "series": [fast - slow for fast, slow in zip(analytics["ma5"], analytics["ma20"])],
+                "tone": "green",
+                "histogram": False,
+            },
+        ]
+    if route == "volatility":
+        return [
+            {
+                "name": "ATR 14",
+                "tag": "Range",
+                "foot": ["Expansion rate", "Stops calibration"],
+                "series": analytics["atr14"],
+                "tone": "amber",
+                "histogram": False,
+            },
+            {
+                "name": "Band Width",
+                "tag": "Compression",
+                "foot": ["Upper minus lower", "Breakout readiness"],
+                "series": [upper - lower for upper, lower in zip(analytics["boll_upper"], analytics["boll_lower"])],
+                "tone": "blue",
+                "histogram": False,
+            },
+            {
+                "name": "High - Low",
+                "tag": "Session Swing",
+                "foot": ["Raw range", "Bar stress"],
+                "series": [candle["high"] - candle["low"] for candle in candles],
+                "tone": "green",
+                "histogram": False,
+            },
+        ]
+    if route == "orderflow":
+        return [
+            {
+                "name": "Delta",
+                "tag": "Flow",
+                "foot": ["Aggressor tilt", "Participation bias"],
+                "series": [candle["delta"] for candle in candles],
+                "tone": "amber",
+                "histogram": True,
+            },
+            {
+                "name": "OBV",
+                "tag": "Carry",
+                "foot": ["Accumulation line", "Persistence"],
+                "series": analytics["obv"],
+                "tone": "blue",
+                "histogram": False,
+            },
+            {
+                "name": "Volume x1K",
+                "tag": "Tempo",
+                "foot": ["Execution pace", "Order flow speed"],
+                "series": [volume / 1000 for volume in analytics["volumes"]],
+                "tone": "green",
+                "histogram": False,
+            },
+        ]
+    if route == "micro":
+        return [
+            {
+                "name": "Micro Range",
+                "tag": "Queue",
+                "foot": ["High-low pulse", "Spread pressure"],
+                "series": [(candle["high"] - candle["low"]) * 100 for candle in candles],
+                "tone": "amber",
+                "histogram": False,
+            },
+            {
+                "name": "Queue Size Proxy",
+                "tag": "Depth",
+                "foot": ["Volume pulse", "Resting flow"],
+                "series": [volume / 2500 for volume in analytics["volumes"]],
+                "tone": "blue",
+                "histogram": False,
+            },
+            {
+                "name": "Delta x0.01",
+                "tag": "Prints",
+                "foot": ["Trade impulse", "Execution stress"],
+                "series": [candle["delta"] / 80 for candle in candles],
+                "tone": "green",
+                "histogram": False,
+            },
+        ]
+    return [
+        {
+            "name": "MA5 - MA20",
+            "tag": "Structure",
+            "foot": ["Trend stack", "Bias spread"],
+            "series": [fast - slow for fast, slow in zip(analytics["ma5"], analytics["ma20"])],
+            "tone": "amber",
+            "histogram": False,
+        },
+        {
+            "name": "Volume x1K",
+            "tag": "Participation",
+            "foot": ["Turnover pace", "Breadth proxy"],
+            "series": [volume / 1000 for volume in analytics["volumes"]],
+            "tone": "blue",
+            "histogram": False,
+        },
+        {
+            "name": "Price - VWAP",
+            "tag": "Location",
+            "foot": ["Relative price", "Fair value gap"],
+            "series": [close - fair for close, fair in zip(analytics["closes"], analytics["vwap"])],
+            "tone": "green",
+            "histogram": False,
+        },
+    ]
+
+
 def build_market_model(code: str, scale: str) -> dict[str, Any]:
     """Build the full mock model for the active symbol and scale."""
 
@@ -381,7 +604,7 @@ def build_market_model(code: str, scale: str) -> dict[str, Any]:
     candles: list[dict[str, float]] = []
     running = prev_close
 
-    for index in range(72):
+    for index in range(CHART_POINT_COUNT):
         wave_primary = math.sin((index + (seed % 17)) / 5.2) * amplitude
         wave_secondary = math.cos((index + (seed % 29)) / 8.7) * amplitude * 0.58
         drift = ((index - 36) / 36) * amplitude * ((((seed >> 5) % 7) - 3) / 3)
@@ -614,39 +837,98 @@ def _histogram_svg(values: list[float], width: float, height: float) -> str:
     return "".join(bars)
 
 
-def build_chart_legend(active_model: dict[str, Any], overlays: list[str]) -> list[dict[str, str]]:
+def build_chart_legend(
+    active_model: dict[str, Any],
+    overlays: list[str],
+    index: int | None = None,
+) -> list[dict[str, str]]:
     """Build legend items for the main chart stage."""
 
-    analytics = active_model["analytics"]
+    candles = active_model["candles"]
+    active_index = _clamp_chart_index(index, len(candles))
+    active_candle = candles[active_index]
+    previous_close = active_model["prev_close"] if active_index == 0 else candles[active_index - 1]["close"]
     legend: list[dict[str, str]] = [
-        {"label": active_model["meta"]["code"], "value": format_number(active_model["last"]), "tone": active_model["tone"]}
+        {
+            "label": active_model["meta"]["code"],
+            "value": format_number(active_candle["close"]),
+            "tone": tone_from_number(active_candle["close"] - previous_close),
+        }
     ]
-    if "MA" in overlays:
-        legend.extend([
-            {"label": "MA5", "value": format_number(analytics["ma5"][-1]), "tone": "amber"},
-            {"label": "MA20", "value": format_number(analytics["ma20"][-1]), "tone": "blue"},
-            {"label": "MA60", "value": format_number(analytics["ma60"][-1]), "tone": "soft"},
-        ])
-    if "EMA" in overlays:
-        legend.extend([
-            {"label": "EMA12", "value": format_number(analytics["ema12"][-1]), "tone": "up"},
-            {"label": "EMA26", "value": format_number(analytics["ema26"][-1]), "tone": "down"},
-        ])
-    if "BOLL" in overlays:
-        legend.extend([
-            {"label": "BOLL U", "value": format_number(analytics["boll_upper"][-1]), "tone": "cyan"},
-            {"label": "BOLL L", "value": format_number(analytics["boll_lower"][-1]), "tone": "cyan"},
-        ])
-    if "VWAP" in overlays:
-        legend.append({"label": "VWAP", "value": format_number(analytics["vwap"][-1]), "tone": "yellow"})
+    for item in _build_overlay_legend_models(active_model, overlays):
+        series_index = _clamp_chart_index(active_index, len(item["series"]))
+        legend.append(
+            {
+                "label": item["label"],
+                "value": format_number(item["series"][series_index]),
+                "tone": item["tone"],
+            }
+        )
     return legend
+
+
+def build_chart_hover_overlay_rows(
+    active_model: dict[str, Any],
+    overlays: list[str],
+    index: int | None,
+) -> list[dict[str, str]]:
+    """Build overlay readouts for the active chart index."""
+
+    active_index = _clamp_chart_index(index, len(active_model["candles"]))
+    rows: list[dict[str, str]] = []
+    for item in _build_overlay_legend_models(active_model, overlays):
+        series_index = _clamp_chart_index(active_index, len(item["series"]))
+        rows.append(
+            {
+                "label": item["label"],
+                "value": format_number(item["series"][series_index]),
+                "tone": item["tone"],
+            }
+        )
+    return rows
+
+
+def build_chart_hover_details(
+    active_model: dict[str, Any],
+    overlays: list[str],
+    route: str,
+    index: int | None,
+) -> dict[str, str]:
+    """Build the primary chart hover card payload for one chart index."""
+
+    candles = active_model["candles"]
+    analytics = active_model["analytics"]
+    active_index = _clamp_chart_index(index, len(candles))
+    candle = candles[active_index]
+    previous_close = active_model["prev_close"] if active_index == 0 else candles[active_index - 1]["close"]
+    price_change = candle["close"] - previous_close
+    price_change_pct = (price_change / previous_close) * 100 if previous_close else 0.0
+    vwap_gap = ((candle["close"] - analytics["vwap"][active_index]) / analytics["vwap"][active_index]) * 100
+    overlay_count = str(len(_build_overlay_legend_models(active_model, overlays)))
+    return {
+        "slot": f"{active_model['scale']} BAR {active_index + 1:02d}/{len(candles):02d}",
+        "price": format_number(candle["close"]),
+        "change": format_signed(price_change_pct, 2, "%"),
+        "open": format_number(candle["open"]),
+        "high": format_number(candle["high"]),
+        "low": format_number(candle["low"]),
+        "close": format_number(candle["close"]),
+        "volume": compact_volume(candle["volume"]),
+        "turnover": compact_volume(candle["turnover"]),
+        "delta": compact_volume(candle["delta"]),
+        "vwap_gap": format_signed(vwap_gap, 2, "%"),
+        "route": route.upper(),
+        "route_description": ROUTE_DESCRIPTIONS[route],
+        "overlay_count": overlay_count,
+        "tone": tone_from_number(price_change),
+    }
 
 
 def build_primary_chart_svg(active_model: dict[str, Any], overlays: list[str], route: str) -> str:
     """Build the primary chart SVG for the center chart stage."""
 
-    width = 1000.0
-    height = 420.0
+    width = PRIMARY_CHART_WIDTH
+    height = PRIMARY_CHART_HEIGHT
     candles = active_model["candles"]
     analytics = active_model["analytics"]
     values = list(analytics["highs"]) + list(analytics["lows"])
@@ -734,67 +1016,41 @@ def build_primary_chart_svg(active_model: dict[str, Any], overlays: list[str], r
     return f"<svg viewBox='0 0 {width:.0f} {height:.0f}' preserveAspectRatio='none' aria-label='Primary chart'>{route_overlay}{''.join(candle_marks)}{''.join(overlays_svg)}</svg>"
 
 
-def build_route_studies(active_model: dict[str, Any], route: str) -> list[dict[str, str]]:
+def build_route_studies(
+    active_model: dict[str, Any],
+    route: str,
+    active_index: int | None = None,
+    hover_active: bool = False,
+) -> list[dict[str, str]]:
     """Build the lower linked study panes for the active route."""
-
-    analytics = active_model["analytics"]
-    candles = active_model["candles"]
-    if route == "momentum":
-        studies = [
-            ("MACD Histogram", "Impulse", ["Signal spread", "Zero line watch"], analytics["macd_hist"], "amber", True),
-            ("RSI 14", "Momentum", ["Range state", "Failure swing"], analytics["rsi14"], "blue", False),
-            ("Signal Delta", "Trigger", ["Line minus signal", "Timing pressure"], [line - signal for line, signal in zip(analytics["macd_line"], analytics["macd_signal"])], "green", False),
-        ]
-    elif route == "trend":
-        studies = [
-            ("MA20 - MA60", "Slope", ["Trend spread", "Medium-term bias"], [fast - slow for fast, slow in zip(analytics["ma20"], analytics["ma60"])], "amber", False),
-            ("EMA12 - EMA26", "Pullback", ["Fast versus slow", "Continuation risk"], [fast - slow for fast, slow in zip(analytics["ema12"], analytics["ema26"])], "blue", False),
-            ("MA5 - MA20", "Front End", ["Near-term spread", "Trend firmness"], [fast - slow for fast, slow in zip(analytics["ma5"], analytics["ma20"])], "green", False),
-        ]
-    elif route == "volatility":
-        studies = [
-            ("ATR 14", "Range", ["Expansion rate", "Stops calibration"], analytics["atr14"], "amber", False),
-            ("Band Width", "Compression", ["Upper minus lower", "Breakout readiness"], [upper - lower for upper, lower in zip(analytics["boll_upper"], analytics["boll_lower"])], "blue", False),
-            ("High - Low", "Session Swing", ["Raw range", "Bar stress"], [candle["high"] - candle["low"] for candle in candles], "green", False),
-        ]
-    elif route == "orderflow":
-        studies = [
-            ("Delta", "Flow", ["Aggressor tilt", "Participation bias"], [candle["delta"] for candle in candles], "amber", True),
-            ("OBV", "Carry", ["Accumulation line", "Persistence"], analytics["obv"], "blue", False),
-            ("Volume x1K", "Tempo", ["Execution pace", "Order flow speed"], [volume / 1000 for volume in analytics["volumes"]], "green", False),
-        ]
-    elif route == "micro":
-        studies = [
-            ("Micro Range", "Queue", ["High-low pulse", "Spread pressure"], [(candle["high"] - candle["low"]) * 100 for candle in candles], "amber", False),
-            ("Queue Size Proxy", "Depth", ["Volume pulse", "Resting flow"], [volume / 2500 for volume in analytics["volumes"]], "blue", False),
-            ("Delta x0.01", "Prints", ["Trade impulse", "Execution stress"], [candle["delta"] / 80 for candle in candles], "green", False),
-        ]
-    else:
-        studies = [
-            ("MA5 - MA20", "Structure", ["Trend stack", "Bias spread"], [fast - slow for fast, slow in zip(analytics["ma5"], analytics["ma20"])], "amber", False),
-            ("Volume x1K", "Participation", ["Turnover pace", "Breadth proxy"], [volume / 1000 for volume in analytics["volumes"]], "blue", False),
-            ("Price - VWAP", "Location", ["Relative price", "Fair value gap"], [close - fair for close, fair in zip(analytics["closes"], analytics["vwap"])], "green", False),
-        ]
 
     tone_map = {"amber": TONE_COLORS["amber"], "blue": TONE_COLORS["blue"], "green": TONE_COLORS["up"]}
     cards: list[dict[str, str]] = []
-    for name, tag, foot, series, tone, histogram in studies:
+    for study in _build_route_study_models(active_model, route):
+        series = study["series"]
+        series_index = _clamp_chart_index(active_index, len(series))
         minimum = min(series)
         maximum = max(series)
-        width = 320.0
-        height = 130.0
-        if histogram:
+        width = STUDY_CHART_WIDTH
+        height = STUDY_CHART_HEIGHT
+        if study["histogram"]:
             svg_body = _histogram_svg(series, width, height)
         else:
-            svg_body = f"<line x1='0' y1='{height - 1:.2f}' x2='{width:.2f}' y2='{height - 1:.2f}' stroke='#22303d' stroke-width='1'></line><path d='{_line_path(series, minimum, maximum, width, height)}' fill='none' stroke='{tone_map[tone]}' stroke-width='1.8'></path>"
+            svg_body = f"<line x1='0' y1='{height - 1:.2f}' x2='{width:.2f}' y2='{height - 1:.2f}' stroke='#22303d' stroke-width='1'></line><path d='{_line_path(series, minimum, maximum, width, height)}' fill='none' stroke='{tone_map[study['tone']]}' stroke-width='1.8'></path>"
+        latest_value = _format_study_value(series[-1])
+        hover_value = _format_study_value(series[series_index])
         cards.append({
-            "name": name,
-            "tag": tag,
-            "tone": tone,
-            "value": format_number(series[-1]),
-            "foot_left": foot[0],
-            "foot_right": foot[1],
-            "svg": f"<svg viewBox='0 0 {width:.0f} {height:.0f}' preserveAspectRatio='none' aria-label='{name}'>{svg_body}</svg>",
+            "name": study["name"],
+            "tag": study["tag"],
+            "tone": study["tone"],
+            "value": latest_value,
+            "hover_value": hover_value,
+            "display_value": hover_value if hover_active else latest_value,
+            "hover_label": f"{active_model['scale']} BAR {series_index + 1:02d}/{len(series):02d}",
+            "display_label": f"{active_model['scale']} BAR {series_index + 1:02d}/{len(series):02d}" if hover_active else "Latest",
+            "foot_left": study["foot"][0],
+            "foot_right": study["foot"][1],
+            "svg": f"<svg viewBox='0 0 {width:.0f} {height:.0f}' preserveAspectRatio='none' aria-label='{study['name']}'>{svg_body}</svg>",
         })
     return cards
 

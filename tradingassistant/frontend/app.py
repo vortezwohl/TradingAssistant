@@ -11,6 +11,7 @@ from .theme import (
     TRADING_COLORS,
     column_style,
     compact_label_style,
+    hover_panel_style,
     input_style,
     mono_value_style,
     panel_head_style,
@@ -20,6 +21,7 @@ from .theme import (
     terminal_bar_block_style,
     terminal_bar_style,
     terminal_button_style,
+    truncated_text_style,
     workspace_style,
 )
 
@@ -95,6 +97,123 @@ def _top_bar() -> rx.Component:
     )
 
 
+
+def _watchlist_row(row: dict[str, rx.Var[str] | str | bool]) -> rx.Component:
+    return rx.button(
+        rx.grid(
+            rx.vstack(
+                rx.text(row["code"], style={**mono_value_style(size="12px"), "width": "100%"}),
+                rx.text(row["meta"], style=truncated_text_style(size="10px")),
+                spacing="0",
+                align="start",
+                justify="center",
+                width="100%",
+                min_width="0",
+                height="100%",
+            ),
+            rx.text(row["last"], style={**mono_value_style(size="12px"), "text_align": "right", "width": "100%", "overflow": "hidden", "text_overflow": "ellipsis"}),
+            rx.text(row["change"], style={**mono_value_style(color=_tone_color_expr(row["tone"]), size="12px"), "text_align": "right", "width": "100%", "overflow": "hidden", "text_overflow": "ellipsis"}),
+            columns="minmax(0, 1fr) 78px 70px",
+            gap="8px",
+            align="center",
+            width="100%",
+            min_width="0",
+            min_height="40px",
+            box_sizing="border-box",
+        ),
+        on_click=lambda: WatchPageState.select_watch_symbol(row["code"]),
+        style={
+            "width": "100%",
+            "min_width": "0",
+            "padding": "7px 10px 7px 12px",
+            "border": "0",
+            "border_bottom": f"1px solid {TRADING_COLORS['line']}",
+            "box_shadow": rx.cond(row["active"], f"inset 2px 0 0 {TRADING_COLORS['amber']}", "inset 0 0 0 transparent"),
+            "background": rx.cond(row["active"], "#141c25", "#0b1118"),
+            "cursor": "pointer",
+            "text_align": "left",
+            "border_radius": "0",
+            "overflow": "hidden",
+            "min_height": "54px",
+            "display": "flex",
+            "align_items": "center",
+            "box_sizing": "border-box",
+        },
+    )
+
+
+def _hover_capture_grid() -> rx.Component:
+    return rx.grid(
+        rx.foreach(
+            list(range(charting.CHART_POINT_COUNT)),
+            lambda index: rx.box(
+                on_mouse_enter=WatchPageState.set_hover_index(index),
+                width="100%",
+                height="100%",
+                display="block",
+                min_width="0",
+                cursor="crosshair",
+            ),
+        ),
+        grid_template_columns=f"repeat({charting.CHART_POINT_COUNT}, minmax(0, 1fr))",
+        grid_template_rows="1fr",
+        width="100%",
+        height="100%",
+        pointer_events="auto",
+        position="absolute",
+        inset="0",
+        z_index="5",
+    )
+
+
+def _chart_hover_panel() -> rx.Component:
+    details = WatchPageState.chart_hover_details
+    return rx.box(
+        rx.hstack(
+            rx.text(details["slot"], style={**compact_label_style(), "color": TRADING_COLORS["amber"]}),
+            rx.spacer(),
+            rx.text(details["change"], style={**mono_value_style(color=_tone_color_expr(details["tone"]), size="11px"), "text_align": "right"}),
+            width="100%",
+            align="center",
+        ),
+        rx.grid(
+            rx.box(rx.text("Open", style=compact_label_style()), rx.text(details["open"], style={**mono_value_style(size="11px"), "margin_top": "3px"})),
+            rx.box(rx.text("High", style=compact_label_style()), rx.text(details["high"], style={**mono_value_style(size="11px"), "margin_top": "3px"})),
+            rx.box(rx.text("Low", style=compact_label_style()), rx.text(details["low"], style={**mono_value_style(size="11px"), "margin_top": "3px"})),
+            rx.box(rx.text("Close", style=compact_label_style()), rx.text(details["close"], style={**mono_value_style(size="11px"), "margin_top": "3px"})),
+            columns="2",
+            gap="8px",
+        ),
+        rx.grid(
+            rx.box(rx.text("Volume", style=compact_label_style()), rx.text(details["volume"], style={**mono_value_style(size="11px"), "margin_top": "3px"})),
+            rx.box(rx.text("Delta", style=compact_label_style()), rx.text(details["delta"], style={**mono_value_style(color=_tone_color_expr(details["tone"]), size="11px"), "margin_top": "3px"})),
+            rx.box(rx.text("VWAP Gap", style=compact_label_style()), rx.text(details["vwap_gap"], style={**mono_value_style(size="11px"), "margin_top": "3px"})),
+            rx.box(rx.text("Route", style=compact_label_style()), rx.text(details["route"], style={**mono_value_style(size="11px"), "margin_top": "3px"})),
+            columns="2",
+            gap="8px",
+        ),
+        rx.box(
+            rx.text(details["route_description"], style={**truncated_text_style(size="10px"), "white_space": "normal", "line_height": "1.35"}),
+            border_top=f"1px solid {TRADING_COLORS['line']}",
+            padding_top="6px",
+        ),
+        rx.vstack(
+            rx.foreach(
+                WatchPageState.chart_hover_overlay_rows,
+                lambda row: rx.hstack(
+                    rx.text(row["label"], style=compact_label_style()),
+                    rx.spacer(),
+                    rx.text(row["value"], style={**mono_value_style(color=_tone_color_expr(row["tone"]), size="11px")}),
+                    width="100%",
+                ),
+            ),
+            spacing="1",
+            width="100%",
+        ),
+        style={**hover_panel_style(), "left": WatchPageState.chart_hover_card_left, "transform": WatchPageState.chart_hover_card_transform},
+    )
+
+
 def _watchlist_panel() -> rx.Component:
     return rx.box(
         rx.box(
@@ -115,28 +234,7 @@ def _watchlist_panel() -> rx.Component:
                 padding="10px",
                 border_bottom=f"1px solid {TRADING_COLORS['line']}",
             ),
-            rx.box(
-                rx.foreach(
-                    WatchPageState.watchlist_rows,
-                    lambda row: rx.button(
-                        rx.grid(
-                            rx.box(
-                                rx.text(row["code"], style={**mono_value_style(size="12px"), "display": "block"}),
-                                rx.text(row["meta"], style={**compact_label_style(), "font_size": "10px", "margin_top": "4px"}),
-                            ),
-                            rx.text(row["last"], style={**mono_value_style(size="12px"), "text_align": "right"}),
-                            rx.text(row["change"], style={**mono_value_style(color=_tone_color_expr(row["tone"]), size="12px"), "text_align": "right"}),
-                            columns="minmax(0, 1fr) 92px 64px",
-                            gap="8px",
-                            align="center",
-                            width="100%",
-                        ),
-                        on_click=lambda: WatchPageState.select_watch_symbol(row["code"]),
-                        style={"width": "100%", "padding": "8px 10px", "border": "0", "border_bottom": f"1px solid {TRADING_COLORS['line']}", "border_left": rx.cond(row["active"], f"2px solid {TRADING_COLORS['amber']}", "2px solid transparent"), "background": rx.cond(row["active"], "#141c25", "#0b1118"), "cursor": "pointer", "text_align": "left", "border_radius": "0"},
-                    ),
-                ),
-                style=scroll_region_style(),
-            ),
+            rx.box(rx.foreach(WatchPageState.watchlist_rows, _watchlist_row), style=scroll_region_style(), min_width="0", width="100%"),
             spacing="0",
             width="100%",
             height="100%",
@@ -159,15 +257,28 @@ def _movers_panel() -> rx.Component:
             rx.foreach(
                 WatchPageState.movers_rows,
                 lambda row: rx.grid(
-                    rx.box(rx.text(row["code"], style={**mono_value_style(size="12px"), "display": "block"}), rx.text(row["name"], style={**compact_label_style(), "font_size": "10px", "margin_top": "4px"})),
-                    rx.text(row["last"], style={**mono_value_style(size="12px"), "text_align": "right"}),
-                    rx.text(row["change"], style={**mono_value_style(color=_tone_color_expr(row["tone"]), size="12px"), "text_align": "right"}),
+                    rx.vstack(
+                        rx.text(row["code"], style={**mono_value_style(size="12px"), "width": "100%"}),
+                        rx.text(row["name"], style=truncated_text_style(size="10px")),
+                        spacing="0",
+                        align="start",
+                        justify="center",
+                        width="100%",
+                        min_width="0",
+                        height="100%",
+                    ),
+                    rx.text(row["last"], style={**mono_value_style(size="12px"), "text_align": "right", "width": "100%", "overflow": "hidden", "text_overflow": "ellipsis"}),
+                    rx.text(row["change"], style={**mono_value_style(color=_tone_color_expr(row["tone"]), size="12px"), "text_align": "right", "width": "100%", "overflow": "hidden", "text_overflow": "ellipsis"}),
                     columns="minmax(0, 1fr) 74px 76px",
                     gap="8px",
                     align="center",
-                    padding="8px 10px",
+                    padding="7px 10px 7px 12px",
                     border_bottom=f"1px solid {TRADING_COLORS['line']}",
                     background="#0b1118",
+                    min_width="0",
+                    overflow="hidden",
+                    min_height="54px",
+                    box_sizing="border-box",
                 ),
             ),
             style=scroll_region_style(),
@@ -182,7 +293,21 @@ def _snapshot_panel() -> rx.Component:
         rx.grid(
             rx.foreach(
                 WatchPageState.snapshot_cells,
-                lambda cell: rx.box(rx.text(cell["label"], style=compact_label_style()), rx.text(cell["value"], style={**mono_value_style(size="17px"), "margin_top": "10px"}), rx.text(cell["sub"], style={**compact_label_style(), "font_size": "10px", "margin_top": "8px"}), padding="10px", border_right=f"1px solid {TRADING_COLORS['line']}", border_bottom=f"1px solid {TRADING_COLORS['line']}", background="#0b1016"),
+                lambda cell: rx.box(
+                    rx.text(cell["label"], style=truncated_text_style(size="10px", color=TRADING_COLORS["text_dim"])),
+                    rx.text(cell["value"], style={**mono_value_style(size="16px"), "margin_top": "6px", "width": "100%", "overflow": "hidden", "text_overflow": "ellipsis"}),
+                    rx.text(cell["sub"], style={**truncated_text_style(size="10px", color=TRADING_COLORS["text_soft"]), "margin_top": "5px"}),
+                    padding="10px",
+                    border_right=f"1px solid {TRADING_COLORS['line']}",
+                    border_bottom=f"1px solid {TRADING_COLORS['line']}",
+                    background="#0b1016",
+                    min_width="0",
+                    overflow="hidden",
+                    display="flex",
+                    flex_direction="column",
+                    justify_content="center",
+                    box_sizing="border-box",
+                ),
             ),
             columns="2",
             rows="2",
@@ -228,8 +353,40 @@ def _overlay_row() -> rx.Component:
 
 def _chart_stage() -> rx.Component:
     return rx.box(
-        rx.box(rx.hstack(rx.text(WatchPageState.chart_title, style={**compact_label_style(), "font_size": "10px", "color": TRADING_COLORS["text_soft"]}), rx.spacer(), rx.hstack(rx.foreach(WatchPageState.chart_legend, lambda item: rx.text(f"{item['label']} {item['value']}", style={**mono_value_style(color=_tone_color_expr(item["tone"]), size="11px"), "white_space": "nowrap"})), spacing="3", overflow_x="auto", max_width="70%"), width="100%", align="center"), padding="0 12px", height="34px", border_bottom=f"1px solid {TRADING_COLORS['line']}", background="#070b10"),
-        rx.box(rx.html(WatchPageState.primary_chart_svg), width="100%", height="100%", background="linear-gradient(rgba(28, 38, 50, 0.7) 1px, transparent 1px), linear-gradient(90deg, rgba(28, 38, 50, 0.7) 1px, transparent 1px), #06090d", background_size="100% 20%, 8.333% 100%, auto"),
+        rx.box(
+            rx.hstack(
+                rx.text(WatchPageState.chart_title, style={**compact_label_style(), "font_size": "10px", "color": TRADING_COLORS["text_soft"]}),
+                rx.text(WatchPageState.chart_status_label, style={**compact_label_style(), "color": TRADING_COLORS["amber"]}),
+                rx.spacer(),
+                rx.hstack(
+                    rx.foreach(
+                        WatchPageState.chart_legend,
+                        lambda item: rx.text(f"{item['label']} {item['value']}", style={**mono_value_style(color=_tone_color_expr(item["tone"]), size="11px"), "white_space": "nowrap"}),
+                    ),
+                    spacing="3",
+                    overflow_x="auto",
+                    max_width="68%",
+                ),
+                width="100%",
+                align="center",
+            ),
+            padding="0 12px",
+            height="34px",
+            border_bottom=f"1px solid {TRADING_COLORS['line']}",
+            background="#070b10",
+        ),
+        rx.box(
+            rx.box(rx.html(WatchPageState.primary_chart_svg), width="100%", height="100%", position="absolute", inset="0", z_index="1"),
+            rx.box(position="absolute", top="0", bottom="0", left=WatchPageState.chart_hover_line_left, width="1px", background=rx.cond(WatchPageState.hover_active, TRADING_COLORS["amber"], "transparent"), opacity="0.7", z_index="3", transform="translateX(-0.5px)", pointer_events="none"),
+            rx.cond(WatchPageState.hover_active, _chart_hover_panel(), rx.fragment()),
+            rx.box(_hover_capture_grid(), position="absolute", inset="0", z_index="5", on_mouse_leave=WatchPageState.clear_hover_index),
+            width="100%",
+            height="100%",
+            position="relative",
+            overflow="hidden",
+            background="linear-gradient(rgba(28, 38, 50, 0.7) 1px, transparent 1px), linear-gradient(90deg, rgba(28, 38, 50, 0.7) 1px, transparent 1px), #06090d",
+            background_size="100% 20%, 8.333% 100%, auto",
+        ),
         rx.grid(rx.foreach(WatchPageState.chart_footer_labels, lambda label: rx.box(label, display="flex", align_items="center", justify_content="center")), columns="6", padding="0 16px", height="28px", border_top=f"1px solid {TRADING_COLORS['line']}", background="#090d12", color=TRADING_COLORS["text_dim"], font_family='"Consolas", "SFMono-Regular", "Courier New", monospace', font_size="11px"),
         style=panel_style(rows="34px minmax(0, 1fr) 28px", background="#070b10"),
     )
@@ -242,9 +399,37 @@ def _study_strip() -> rx.Component:
             rx.foreach(
                 WatchPageState.study_cards,
                 lambda card: rx.box(
-                    rx.hstack(rx.text(card["name"], style={**compact_label_style(), "font_size": "11px", "color": TRADING_COLORS["text_soft"]}), rx.spacer(), rx.text(card["tag"], style={**mono_value_style(color=_tone_color_expr(card["tone"]), size="12px")}), width="100%", padding="0 10px", height="34px", border_bottom=f"1px solid {TRADING_COLORS['line']}"),
-                    rx.box(rx.html(card["svg"]), width="100%", height="100%", background="linear-gradient(rgba(28, 38, 50, 0.55) 1px, transparent 1px), linear-gradient(90deg, rgba(28, 38, 50, 0.55) 1px, transparent 1px)", background_size="100% 25%, 20% 100%"),
-                    rx.grid(rx.box(card["foot_left"], padding="0 10px", display="flex", align_items="center", border_right=f"1px solid {TRADING_COLORS['line']}", color=TRADING_COLORS["text_dim"], font_size="10px", text_transform="uppercase", letter_spacing="0.06em"), rx.box(card["foot_right"], padding="0 10px", display="flex", align_items="center", color=TRADING_COLORS["text_dim"], font_size="10px", text_transform="uppercase", letter_spacing="0.06em"), columns="2", height="44px", border_top=f"1px solid {TRADING_COLORS['line']}"),
+                    rx.hstack(
+                        rx.text(card["name"], style={**compact_label_style(), "font_size": "11px", "color": TRADING_COLORS["text_soft"]}),
+                        rx.spacer(),
+                        rx.vstack(
+                            rx.text(card["display_value"], style={**mono_value_style(color=_tone_color_expr(card["tone"]), size="12px")}),
+                            rx.text(card["display_label"], style=compact_label_style()),
+                            spacing="0",
+                            align="end",
+                        ),
+                        width="100%",
+                        padding="0 10px",
+                        height="34px",
+                        border_bottom=f"1px solid {TRADING_COLORS['line']}",
+                    ),
+                    rx.box(
+                        rx.html(card["svg"]),
+                        rx.box(position="absolute", top="0", bottom="0", left=WatchPageState.chart_hover_line_left, width="1px", background=rx.cond(WatchPageState.hover_active, TRADING_COLORS["amber"], "transparent"), opacity="0.65", z_index="2", transform="translateX(-0.5px)", pointer_events="none"),
+                        width="100%",
+                        height="100%",
+                        position="relative",
+                        background="linear-gradient(rgba(28, 38, 50, 0.55) 1px, transparent 1px), linear-gradient(90deg, rgba(28, 38, 50, 0.55) 1px, transparent 1px)",
+                        background_size="100% 25%, 20% 100%",
+                        overflow="hidden",
+                    ),
+                    rx.grid(
+                        rx.box(card["foot_left"], padding="0 10px", display="flex", align_items="center", border_right=f"1px solid {TRADING_COLORS['line']}", color=TRADING_COLORS["text_dim"], font_size="10px", text_transform="uppercase", letter_spacing="0.06em", overflow="hidden", text_overflow="ellipsis", white_space="nowrap"),
+                        rx.box(card["foot_right"], padding="0 10px", display="flex", align_items="center", color=TRADING_COLORS["text_dim"], font_size="10px", text_transform="uppercase", letter_spacing="0.06em", overflow="hidden", text_overflow="ellipsis", white_space="nowrap"),
+                        columns="2",
+                        height="44px",
+                        border_top=f"1px solid {TRADING_COLORS['line']}",
+                    ),
                     style=panel_style(rows="34px minmax(0, 1fr) 44px", background=TRADING_COLORS["surface_panel_alt"], border_bottom=False),
                 ),
             ),

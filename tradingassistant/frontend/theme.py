@@ -28,6 +28,7 @@ TRADING_FONTS = {
 }
 
 
+
 def shell_style() -> dict[str, str]:
     """Return the fixed full-screen page shell."""
 
@@ -35,11 +36,11 @@ def shell_style() -> dict[str, str]:
         "width": "100%",
         "height": "100vh",
         "overflow": "hidden",
+        "box_sizing": "border-box",
         "background": TRADING_COLORS["bg"],
         "color": TRADING_COLORS["text"],
         "font_family": TRADING_FONTS["sans"],
     }
-
 
 
 def terminal_bar_style() -> dict[str, str]:
@@ -53,7 +54,6 @@ def terminal_bar_style() -> dict[str, str]:
         "background": TRADING_COLORS["surface"],
         "overflow": "hidden",
     }
-
 
 
 def terminal_bar_block_style(*, border_right: bool = True, justify_end: bool = False) -> dict[str, str]:
@@ -70,7 +70,6 @@ def terminal_bar_block_style(*, border_right: bool = True, justify_end: bool = F
     }
 
 
-
 def workspace_style() -> dict[str, str]:
     """Return the three-column desktop terminal grid."""
 
@@ -80,9 +79,9 @@ def workspace_style() -> dict[str, str]:
         "height": "calc(100vh - 48px)",
         "min_height": "0",
         "overflow": "hidden",
+        "box_sizing": "border-box",
         "min_width": "1280px",
     }
-
 
 
 def column_style(*, rows: str, background: str, border_right: bool = True) -> dict[str, str]:
@@ -95,8 +94,8 @@ def column_style(*, rows: str, background: str, border_right: bool = True) -> di
         "background": background,
         "border_right": f"1px solid {TRADING_COLORS['line']}" if border_right else "0",
         "overflow": "hidden",
+        "box_sizing": "border-box",
     }
-
 
 
 def panel_style(*, rows: str = "36px minmax(0, 1fr)", background: str | None = None, border_bottom: bool = True) -> dict[str, str]:
@@ -109,8 +108,8 @@ def panel_style(*, rows: str = "36px minmax(0, 1fr)", background: str | None = N
         "background": background or TRADING_COLORS["surface_alt"],
         "border_bottom": f"1px solid {TRADING_COLORS['line']}" if border_bottom else "0",
         "overflow": "hidden",
+        "box_sizing": "border-box",
     }
-
 
 
 def panel_head_style() -> dict[str, str]:
@@ -129,8 +128,8 @@ def panel_head_style() -> dict[str, str]:
         "text_transform": "uppercase",
         "letter_spacing": "0.1em",
         "min_height": "36px",
+        "box_sizing": "border-box",
     }
-
 
 
 def scroll_region_style(*, padding: str = "0") -> dict[str, str]:
@@ -142,10 +141,10 @@ def scroll_region_style(*, padding: str = "0") -> dict[str, str]:
         "overflow_y": "auto",
         "overflow_x": "hidden",
         "padding": padding,
+        "box_sizing": "border-box",
         "scrollbar_width": "thin",
         "scrollbar_color": f"{TRADING_COLORS['line_strong']} {TRADING_COLORS['surface_alt']}",
     }
-
 
 
 def terminal_button_style(*, tone: str = "amber", height: str = "26px", padding: str = "0 9px") -> dict[str, str]:
@@ -164,8 +163,8 @@ def terminal_button_style(*, tone: str = "amber", height: str = "26px", padding:
         "white_space": "nowrap",
         "flex": "0 0 auto",
         "border_radius": "0",
+        "box_sizing": "border-box",
     }
-
 
 
 def input_style() -> dict[str, str]:
@@ -180,8 +179,8 @@ def input_style() -> dict[str, str]:
         "font_family": TRADING_FONTS["mono"],
         "font_size": "12px",
         "border_radius": "0",
+        "box_sizing": "border-box",
     }
-
 
 
 def compact_label_style() -> dict[str, str]:
@@ -192,8 +191,12 @@ def compact_label_style() -> dict[str, str]:
         "color": TRADING_COLORS["text_dim"],
         "text_transform": "uppercase",
         "letter_spacing": "0.08em",
+        "line_height": "1.25",
+        "display": "block",
+        "white_space": "nowrap",
+        "min_width": "0",
+        "box_sizing": "border-box",
     }
-
 
 
 def mono_value_style(*, color: str = TRADING_COLORS["text"], size: str = "12px", weight: str = "700") -> dict[str, str]:
@@ -205,4 +208,46 @@ def mono_value_style(*, color: str = TRADING_COLORS["text"], size: str = "12px",
         "font_weight": weight,
         "color": color,
         "white_space": "nowrap",
+        "line_height": "1.2",
+        "display": "block",
+        "min_width": "0",
+        "box_sizing": "border-box",
+    }
+
+
+def truncated_text_style(*, color: str | None = None, size: str = "10px", mono: bool = False) -> dict[str, str]:
+    """Return stable truncation rules for dense side-rail text."""
+
+    return {
+        "font_family": TRADING_FONTS["mono"] if mono else TRADING_FONTS["sans"],
+        "font_size": size,
+        "color": color or TRADING_COLORS["text_soft"],
+        "line_height": "1.25",
+        "white_space": "nowrap",
+        "overflow": "hidden",
+        "text_overflow": "ellipsis",
+        "display": "block",
+        "min_width": "0",
+        "width": "100%",
+        "box_sizing": "border-box",
+    }
+
+
+def hover_panel_style() -> dict[str, str]:
+    """Return the compact chart hover surface style."""
+
+    return {
+        "position": "absolute",
+        "top": "14px",
+        "width": "236px",
+        "padding": "8px 10px",
+        "border": f"1px solid {TRADING_COLORS['line_strong']}",
+        "background": "rgba(6, 10, 14, 0.96)",
+        "display": "grid",
+        "gap": "8px",
+        "pointer_events": "none",
+        "z_index": "4",
+        "box_shadow": "0 0 0 1px rgba(0, 0, 0, 0.28)",
+        "overflow": "hidden",
+        "box_sizing": "border-box",
     }

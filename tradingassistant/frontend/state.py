@@ -20,10 +20,67 @@ class WatchPageState(rx.State):
     rail_tab: str = charting.RAIL_TABS[0][0]
     movers_tab: str = charting.MOVERS_TABS[0][0]
     sort_mode: str = "code"
+    hover_index: int = -1
+
+    def _reset_hover(self) -> None:
+        """Clear transient chart hover state when the chart context changes."""
+
+        self.hover_index = -1
 
     @rx.var
     def active_model(self) -> dict:
         return charting.build_market_model(self.active_code, self.active_scale)
+
+    @rx.var
+    def hover_active(self) -> bool:
+        return self.hover_index >= 0
+
+    @rx.var
+    def active_chart_index(self) -> int:
+        candles = self.active_model["candles"]
+        if not candles:
+            return 0
+        if self.hover_index < 0:
+            return len(candles) - 1
+        return max(0, min(self.hover_index, len(candles) - 1))
+
+    @rx.var
+    def chart_hover_line_left(self) -> str:
+        offset = ((self.active_chart_index + 0.5) / charting.CHART_POINT_COUNT) * 100
+        return f"{offset:.3f}%"
+
+    @rx.var
+    def chart_hover_card_left(self) -> str:
+        return self.chart_hover_line_left
+
+    @rx.var
+    def chart_hover_card_transform(self) -> str:
+        if self.active_chart_index <= 8:
+            return "translateX(0)"
+        if self.active_chart_index >= charting.CHART_POINT_COUNT - 9:
+            return "translateX(-100%)"
+        return "translateX(-50%)"
+
+    @rx.var
+    def chart_hover_details(self) -> dict[str, str]:
+        return charting.build_chart_hover_details(
+            self.active_model,
+            self.active_overlays,
+            self.active_route,
+            self.active_chart_index,
+        )
+
+    @rx.var
+    def chart_hover_overlay_rows(self) -> list[dict[str, str]]:
+        return charting.build_chart_hover_overlay_rows(
+            self.active_model,
+            self.active_overlays,
+            self.active_chart_index,
+        )
+
+    @rx.var
+    def chart_status_label(self) -> str:
+        return self.chart_hover_details["slot"] if self.hover_active else "LIVE"
 
     @rx.var
     def macro_strip(self) -> list[dict[str, str]]:
@@ -56,7 +113,12 @@ class WatchPageState(rx.State):
 
     @rx.var
     def chart_legend(self) -> list[dict[str, str]]:
-        return charting.build_chart_legend(self.active_model, self.active_overlays)
+        index = self.active_chart_index if self.hover_active else None
+        return charting.build_chart_legend(
+            self.active_model,
+            self.active_overlays,
+            index,
+        )
 
     @rx.var
     def primary_chart_svg(self) -> str:
@@ -68,7 +130,12 @@ class WatchPageState(rx.State):
 
     @rx.var
     def study_cards(self) -> list[dict[str, str]]:
-        return charting.build_route_studies(self.active_model, self.active_route)
+        return charting.build_route_studies(
+            self.active_model,
+            self.active_route,
+            self.active_chart_index,
+            self.hover_active,
+        )
 
     @rx.var
     def depth_rows(self) -> list[dict[str, str]]:
@@ -140,6 +207,8 @@ class WatchPageState(rx.State):
 
     @rx.var
     def study_summary(self) -> str:
+        if self.hover_active:
+            return f"3 linked indicator panes / {self.chart_hover_details['slot']}"
         return "3 linked indicator panes"
 
     @rx.var
@@ -163,25 +232,31 @@ class WatchPageState(rx.State):
             self.watchlist = [code, *self.watchlist]
         self.active_code = code
         self.ticker_input = ""
+        self._reset_hover()
 
     @rx.event
     def select_watch_symbol(self, code: str) -> None:
         self.active_code = code
+        self._reset_hover()
 
     @rx.event
     def set_scale(self, scale: str) -> None:
         self.active_scale = scale
+        self._reset_hover()
 
     @rx.event
     def set_route(self, route: str) -> None:
         self.active_route = route
+        self._reset_hover()
 
     @rx.event
     def toggle_overlay(self, overlay: str) -> None:
         if overlay in self.active_overlays:
             self.active_overlays = [item for item in self.active_overlays if item != overlay]
+            self._reset_hover()
             return
         self.active_overlays = [*self.active_overlays, overlay]
+        self._reset_hover()
 
     @rx.event
     def set_depth_mode(self, mode: str) -> None:
@@ -198,3 +273,11 @@ class WatchPageState(rx.State):
     @rx.event
     def toggle_sort_mode(self) -> None:
         self.sort_mode = "name" if self.sort_mode == "code" else "code"
+
+    @rx.event
+    def set_hover_index(self, index: int) -> None:
+        self.hover_index = max(0, min(index, charting.CHART_POINT_COUNT - 1))
+
+    @rx.event
+    def clear_hover_index(self) -> None:
+        self._reset_hover()
