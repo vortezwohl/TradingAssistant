@@ -1,111 +1,186 @@
-"""验证 Reflex 前端状态与页面结构。"""
+"""????? Reflex ????????? mock ?????"""
 
 from __future__ import annotations
 
 import unittest
 
 from tradingassistant.frontend.app import index
-from tradingassistant.frontend.charting import (
-    ChartBootstrapPayload,
-    ChartIncrementalPayload,
-    example_bootstrap_payload,
-    example_incremental_payload,
-    indicators_json_literal,
-)
+from tradingassistant.frontend import charting
 from tradingassistant.frontend.state import WatchPageState
-from tradingassistant.settings import API_BASE_URL
+from tradingassistant.frontend.theme import shell_style, workspace_style, scroll_region_style
 
 
 class WatchPageStateTests(unittest.TestCase):
-    """验证看盘页状态。"""
+    """???????????????"""
 
-    def test_state_keeps_low_frequency_page_fields_only(self) -> None:
-        """确认页面状态仅保留低频字段。"""
-
-        field_names = set(WatchPageState.get_fields())
-        self.assertIn("api_base_url", field_names)
-        self.assertIn("region", field_names)
-        self.assertIn("code", field_names)
-        self.assertIn("period", field_names)
-        self.assertIn("indicators", field_names)
-        self.assertIn("watchlist", field_names)
-        self.assertIn("chart_subscription_payload", field_names)
-        self.assertNotIn("ticks", field_names)
-        self.assertNotIn("bars", field_names)
-        self.assertNotIn("raw_market_stream", field_names)
-
-    def test_state_exposes_bootstrap_and_subscription_intents(self) -> None:
-        """确认 bootstrap 和订阅意图对外暴露。"""
+    def test_state_fields_match_terminal_controls(self) -> None:
+        """???????????????????"""
 
         fields = WatchPageState.get_fields()
-        self.assertEqual(fields["bootstrap_endpoint"].default, "/api/chart/bootstrap")
-        self.assertEqual(fields["chart_socket_url"].default, "/ws/chart/session-local")
-        self.assertEqual(fields["quote_socket_url"].default, "/ws/quotes/session-local")
-        self.assertEqual(fields["alerts_socket_url"].default, "/ws/alerts/session-local")
-        self.assertIn("subscribe", fields["chart_subscription_payload"].default)
-        self.assertIn("watchlist", fields["quote_subscription_payload"].default)
-        self.assertIn("default", fields["alert_subscription_payload"].default)
-        self.assertIn("bootstrap_url", WatchPageState.vars)
-        self.assertIn("indicator_selection_json", WatchPageState.vars)
+        self.assertEqual(fields["ticker_input"].default, "")
+        self.assertEqual(fields["active_code"].default, "HK.00700")
+        self.assertEqual(fields["active_scale"].default, "1H")
+        self.assertEqual(fields["active_route"].default, "main")
+        self.assertEqual(fields["depth_mode"].default, "ladder")
+        self.assertEqual(fields["rail_tab"].default, "analysis")
+        self.assertEqual(fields["movers_tab"].default, "leaders")
+        self.assertEqual(fields["sort_mode"].default, "code")
+        self.assertIn("US.NVDA", fields["watchlist"].default_factory())
+        self.assertIn("MA", fields["active_overlays"].default_factory())
+        self.assertIn("BOLL", fields["active_overlays"].default_factory())
+        self.assertIn("VWAP", fields["active_overlays"].default_factory())
 
-    def test_state_supports_context_switch_fields(self) -> None:
-        """确认默认 API 地址来自统一配置源。"""
+    def test_state_exposes_terminal_derived_vars(self) -> None:
+        """??????????????????"""
 
-        fields = WatchPageState.get_fields()
-        self.assertEqual(fields["api_base_url"].default, API_BASE_URL)
-        self.assertIn("HK.00700", fields["watchlist"].default_factory())
-        self.assertIn("1m", fields["available_periods"].default_factory())
-        self.assertIn("ma5", fields["indicator_candidates"].default_factory())
+        vars_set = set(WatchPageState.vars)
+        for name in [
+            "active_model",
+            "watchlist_rows",
+            "movers_rows",
+            "snapshot_cells",
+            "instrument_metrics",
+            "chart_legend",
+            "primary_chart_svg",
+            "study_cards",
+            "depth_rows",
+            "order_book_rows",
+            "analysis_cards",
+            "tape_rows",
+            "signal_rows",
+            "news_rows",
+            "instrument_name",
+            "chart_title",
+            "order_book_meta",
+        ]:
+            self.assertIn(name, vars_set)
+
+    def test_state_exposes_terminal_event_handlers(self) -> None:
+        """?????????????????"""
+
+        handlers = WatchPageState.event_handlers
+        for name in [
+            "set_ticker_input",
+            "add_watch_symbol",
+            "select_watch_symbol",
+            "set_scale",
+            "set_route",
+            "toggle_overlay",
+            "set_depth_mode",
+            "set_rail_tab",
+            "set_movers_tab",
+            "toggle_sort_mode",
+        ]:
+            self.assertIn(name, handlers)
 
 
-class ChartContractTests(unittest.TestCase):
-    """验证图表契约。"""
+class ThemeContractTests(unittest.TestCase):
+    """?????????"""
 
-    def test_bootstrap_contract_roundtrip(self) -> None:
-        """bootstrap 契约应可往返序列化。"""
+    def test_shell_and_workspace_disable_page_scroll(self) -> None:
+        """?????????????????"""
 
-        payload = example_bootstrap_payload()
-        rebuilt = ChartBootstrapPayload.from_dict(payload.to_dict())
-        self.assertEqual(rebuilt.topic, "chart:HK.00700:1m")
-        self.assertEqual(rebuilt.symbol, "HK.00700")
-        self.assertEqual(len(rebuilt.bars), 1)
-        self.assertIn("values", rebuilt.indicators)
-
-    def test_incremental_contract_roundtrip(self) -> None:
-        """增量契约应保留 provisional 语义。"""
-
-        payload = example_incremental_payload()
-        rebuilt = ChartIncrementalPayload.from_dict(payload.to_dict())
-        self.assertEqual(rebuilt.payload_type, "bar_update")
-        self.assertTrue(rebuilt.provisional)
-        self.assertEqual(rebuilt.bar["bar_time"], "2026-06-07T09:31:00+00:00")
-        self.assertTrue(rebuilt.indicators["provisional"])
-
-    def test_indicator_json_literal_keeps_enabled_order(self) -> None:
-        """指标 JSON 应保持开关顺序。"""
-
-        rendered = indicators_json_literal(["ma5", "macd"])
-        self.assertEqual(rendered, '{"enabled":["ma5","macd"]}')
+        shell = shell_style()
+        workspace = workspace_style()
+        scroll_region = scroll_region_style()
+        self.assertEqual(shell["height"], "100vh")
+        self.assertEqual(shell["overflow"], "hidden")
+        self.assertEqual(workspace["grid_template_columns"], "260px minmax(0, 1fr) 360px")
+        self.assertEqual(workspace["height"], "calc(100vh - 48px)")
+        self.assertEqual(workspace["overflow"], "hidden")
+        self.assertEqual(scroll_region["overflow_y"], "auto")
+        self.assertEqual(scroll_region["overflow_x"], "hidden")
 
 
-class WatchPageRenderingTests(unittest.TestCase):
-    """验证页面组件树。"""
+class ChartingContractTests(unittest.TestCase):
+    """?? mock ????????????"""
 
-    def test_index_contains_chart_runtime_and_controls(self) -> None:
-        """页面应包含图表运行时与控件。"""
+    def test_scale_and_route_options_cover_terminal_contract(self) -> None:
+        """??????????????????"""
+
+        self.assertEqual(
+            charting.SCALE_OPTIONS,
+            ("30S", "1M", "5M", "15M", "1H", "4H", "1D", "1W", "1MO", "1Y"),
+        )
+        self.assertEqual(
+            charting.ROUTE_OPTIONS,
+            (
+                ("main", "Main"),
+                ("momentum", "Momentum"),
+                ("trend", "Trend"),
+                ("volatility", "Volatility"),
+                ("orderflow", "Order Flow"),
+                ("micro", "Microstructure"),
+            ),
+        )
+        self.assertEqual(charting.OVERLAY_OPTIONS, ("MA", "EMA", "BOLL", "VWAP"))
+        self.assertEqual(charting.RAIL_TABS, (("analysis", "Analysis"), ("tape", "Tape"), ("signals", "Signals"), ("news", "News")))
+
+    def test_charting_helpers_cover_overlays_routes_and_microstructure(self) -> None:
+        """???study????????????? mock ???"""
+
+        model = charting.build_market_model("US.NVDA", "1D")
+        legend = charting.build_chart_legend(model, ["MA", "EMA", "BOLL", "VWAP"])
+        labels = [item["label"] for item in legend]
+        self.assertIn("MA5", labels)
+        self.assertIn("EMA12", labels)
+        self.assertIn("BOLL U", labels)
+        self.assertIn("VWAP", labels)
+
+        main_svg = charting.build_primary_chart_svg(model, ["MA", "EMA", "BOLL", "VWAP"], "orderflow")
+        self.assertIn("<svg", main_svg)
+        self.assertIn("path", main_svg)
+        self.assertIn("rect", main_svg)
+
+        for route, _ in charting.ROUTE_OPTIONS:
+            studies = charting.build_route_studies(model, route)
+            self.assertEqual(len(studies), 3)
+            for card in studies:
+                self.assertIn("svg", card)
+                self.assertIn("tag", card)
+                self.assertIn("foot_left", card)
+                self.assertIn("foot_right", card)
+
+        depth_rows = charting.build_depth_rows(model, "ladder")
+        self.assertEqual(len(depth_rows), 10)
+        self.assertIn("bid_width", depth_rows[0])
+        self.assertIn("ask_width", depth_rows[0])
+
+        book_rows = charting.build_order_book_rows(model)
+        self.assertEqual(len(book_rows), 10)
+        self.assertIn("spread", book_rows[0])
+
+        analysis_cards = charting.build_analysis_cards(model, "main", "30S", ["MA", "VWAP"], "ladder")
+        self.assertEqual(len(analysis_cards), 3)
+        self.assertIn("metric_1_label", analysis_cards[0])
+        self.assertIn("metric_3_value", analysis_cards[0])
+
+
+class TerminalRenderingTests(unittest.TestCase):
+    """?? Reflex ???????????"""
+
+    def test_index_contains_terminal_workspace_structure(self) -> None:
+        """?????????????????????"""
 
         rendered = str(index())
-        self.assertIn("watch-chart-root", rendered)
-        self.assertIn("ECharts", rendered)
-        self.assertIn("data-bootstrap-url", rendered)
-        self.assertIn("command-bar", rendered)
-        self.assertIn("chart-workspace", rendered)
-        self.assertIn("summary-rail", rendered)
-        self.assertIn("workspace-controls", rendered)
-        self.assertIn("workspace-diagnostics", rendered)
-        self.assertIn("indicator-status", rendered)
-        self.assertIn("RadixThemesSelect.Root", rendered)
-        self.assertIn("RadixThemesCheckbox", rendered)
+        for token in [
+            "TradingAssistant / Terminal",
+            "Wall Street Market Workspace",
+            "Watchlist",
+            "Market Movers",
+            "Desk Snapshot",
+            "Market Depth",
+            "Order Book",
+            "Analysis",
+            "Tape",
+            "Signals",
+            "News",
+            "260px minmax(0, 1fr) 360px",
+            "calc(100vh - 48px)",
+            "polygon(100% 0, 100% 100%, 0 100%)",
+            "polygon(0 0, 100% 0, 0 100%)",
+        ]:
+            self.assertIn(token, rendered)
 
 
 if __name__ == "__main__":

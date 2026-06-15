@@ -1,116 +1,200 @@
-"""定义 Reflex 看盘页的低频状态与交互事件。"""
+"""State and event wiring for the native terminal workspace."""
 
 from __future__ import annotations
 
-import json
-from urllib.parse import urlencode
-
 import reflex as rx
 
-from tradingassistant.settings import API_BASE_URL
+from . import charting
 
 
 class WatchPageState(rx.State):
-    """描述看盘页面的低频交互状态。"""
+    """Store user-facing terminal controls and derive all mock workspace views."""
 
-    api_base_url: str = API_BASE_URL
-    region: str = "HK"
-    code: str = "00700"
-    period: str = "1m"
-    indicators: list[str] = ["ma5", "ma20", "macd", "rsi14"]
-    indicator_candidates: list[str] = ["ma5", "ma20", "macd", "rsi14", "boll"]
-    available_periods: list[str] = ["1m", "5m", "15m", "30m", "60m"]
-    watchlist: list[str] = ["HK.00700", "US.AAPL", "US.NVDA"]
-    bootstrap_endpoint: str = "/api/chart/bootstrap"
-    chart_socket_url: str = "/ws/chart/session-local"
-    quote_socket_url: str = "/ws/quotes/session-local"
-    alerts_socket_url: str = "/ws/alerts/session-local"
-    chart_subscription_payload: str = '{"action":"subscribe","symbol":"HK.00700","period":"1m"}'
-    quote_subscription_payload: str = '{"action":"subscribe","name":"watchlist"}'
-    alert_subscription_payload: str = '{"action":"subscribe","name":"default"}'
+    ticker_input: str = ""
+    watchlist: list[str] = charting.DEFAULT_WATCHLIST.copy()
+    active_code: str = charting.DEFAULT_WATCHLIST[0]
+    active_scale: str = charting.SCALE_OPTIONS[4]
+    active_route: str = charting.ROUTE_OPTIONS[0][0]
+    active_overlays: list[str] = ["MA", "BOLL", "VWAP"]
+    depth_mode: str = charting.DEPTH_MODE_OPTIONS[0][0]
+    rail_tab: str = charting.RAIL_TABS[0][0]
+    movers_tab: str = charting.MOVERS_TABS[0][0]
+    sort_mode: str = "code"
 
     @rx.var
-    def symbol(self) -> str:
-        """返回标准化 symbol。"""
+    def active_model(self) -> dict:
+        return charting.build_market_model(self.active_code, self.active_scale)
 
-        return f"{self.region}.{self.code}"
+    @rx.var
+    def macro_strip(self) -> list[dict[str, str]]:
+        return charting.MACRO_STRIP
+
+    @rx.var
+    def quote_strip(self) -> list[dict[str, str]]:
+        return charting.build_quote_strip(self.active_model)
+
+    @rx.var
+    def watchlist_rows(self) -> list[dict[str, str | bool]]:
+        return charting.build_watchlist_rows(
+            self.watchlist,
+            self.active_code,
+            self.active_scale,
+            self.sort_mode,
+        )
+
+    @rx.var
+    def movers_rows(self) -> list[dict[str, str]]:
+        return charting.build_movers_rows(self.movers_tab, self.active_scale)
+
+    @rx.var
+    def snapshot_cells(self) -> list[dict[str, str]]:
+        return charting.build_snapshot_cells(self.active_model)
+
+    @rx.var
+    def instrument_metrics(self) -> list[dict[str, str]]:
+        return charting.build_instrument_metrics(self.active_model)
+
+    @rx.var
+    def chart_legend(self) -> list[dict[str, str]]:
+        return charting.build_chart_legend(self.active_model, self.active_overlays)
+
+    @rx.var
+    def primary_chart_svg(self) -> str:
+        return charting.build_primary_chart_svg(
+            self.active_model,
+            self.active_overlays,
+            self.active_route,
+        )
+
+    @rx.var
+    def study_cards(self) -> list[dict[str, str]]:
+        return charting.build_route_studies(self.active_model, self.active_route)
+
+    @rx.var
+    def depth_rows(self) -> list[dict[str, str]]:
+        return charting.build_depth_rows(self.active_model, self.depth_mode)
+
+    @rx.var
+    def order_book_rows(self) -> list[dict[str, str]]:
+        return charting.build_order_book_rows(self.active_model)
+
+    @rx.var
+    def analysis_cards(self) -> list[dict[str, str]]:
+        return charting.build_analysis_cards(
+            self.active_model,
+            self.active_route,
+            self.active_scale,
+            self.active_overlays,
+            self.depth_mode,
+        )
+
+    @rx.var
+    def tape_rows(self) -> list[dict[str, str]]:
+        return charting.build_tape_rows(self.active_model)
+
+    @rx.var
+    def signal_rows(self) -> list[dict[str, str]]:
+        return charting.build_signal_rows()
+
+    @rx.var
+    def news_rows(self) -> list[dict[str, str]]:
+        return charting.build_news_rows()
+
+    @rx.var
+    def sort_button_label(self) -> str:
+        return "By Code" if self.sort_mode == "code" else "By Name"
+
+    @rx.var
+    def instrument_name(self) -> str:
+        return self.active_model["meta"]["name"]
+
+    @rx.var
+    def instrument_meta(self) -> str:
+        model = self.active_model
+        return f"{model['meta']['code']} / {model['meta']['venue']} / {model['meta']['session']}"
+
+    @rx.var
+    def last_price_text(self) -> str:
+        return charting.format_number(self.active_model["last"])
+
+    @rx.var
+    def price_change_text(self) -> str:
+        model = self.active_model
+        return f"{charting.format_signed(model['change_value'])} / {charting.format_signed(model['change_pct'], 2, '%')}"
+
+    @rx.var
+    def price_change_color(self) -> str:
+        return self.active_model["change_color"]
 
     @rx.var
     def chart_title(self) -> str:
-        """返回页面主标题。"""
-
-        return f"{self.symbol} {self.period} 实时看盘"
+        return f"{self.active_model['meta']['code']} / {self.active_route.upper()} / {self.active_scale}"
 
     @rx.var
-    def bootstrap_url(self) -> str:
-        """返回 bootstrap 请求地址。"""
-
-        query = urlencode(
-            {
-                "region": self.region,
-                "code": self.code,
-                "period": self.period,
-                "bars": 240,
-            }
-        )
-        return f"{self.bootstrap_endpoint}?{query}"
+    def route_hint(self) -> str:
+        return f"{self.active_route.upper()} ROUTE / {self.active_scale}"
 
     @rx.var
-    def indicator_selection_json(self) -> str:
-        """返回图表组件使用的指标选择 JSON。"""
+    def study_title(self) -> str:
+        return f"{self.active_route.upper()} ROUTE STUDIES"
 
-        return json.dumps(self.indicators, ensure_ascii=False, separators=(",", ":"))
+    @rx.var
+    def study_summary(self) -> str:
+        return "3 linked indicator panes"
+
+    @rx.var
+    def chart_footer_labels(self) -> list[str]:
+        return [f"{self.active_scale} {index}" for index in range(1, 7)]
+
+    @rx.var
+    def order_book_meta(self) -> str:
+        return f"{self.depth_mode.upper()} VIEW / 10 levels"
 
     @rx.event
-    def set_symbol(self, value: str) -> None:
-        """根据 watchlist 切换当前标的。"""
+    def set_ticker_input(self, value: str) -> None:
+        self.ticker_input = value
 
-        try:
-            region, code = value.split(".", maxsplit=1)
-        except ValueError:
+    @rx.event
+    def add_watch_symbol(self) -> None:
+        code = charting.normalize_code(self.ticker_input)
+        if not code:
             return
-        self.region = region
-        self.code = code
-        self._refresh_chart_subscription_payload()
+        if code not in self.watchlist:
+            self.watchlist = [code, *self.watchlist]
+        self.active_code = code
+        self.ticker_input = ""
 
     @rx.event
-    def set_period(self, period: str) -> None:
-        """切换图表周期。"""
-
-        self.period = period
-        self._refresh_chart_subscription_payload()
+    def select_watch_symbol(self, code: str) -> None:
+        self.active_code = code
 
     @rx.event
-    def set_indicator_enabled(self, indicator: str, checked: bool) -> None:
-        """以显式布尔值更新指标开关。"""
+    def set_scale(self, scale: str) -> None:
+        self.active_scale = scale
 
-        if checked:
-            if indicator not in self.indicators:
-                self.indicators = [*self.indicators, indicator]
+    @rx.event
+    def set_route(self, route: str) -> None:
+        self.active_route = route
+
+    @rx.event
+    def toggle_overlay(self, overlay: str) -> None:
+        if overlay in self.active_overlays:
+            self.active_overlays = [item for item in self.active_overlays if item != overlay]
             return
-        self.indicators = [item for item in self.indicators if item != indicator]
+        self.active_overlays = [*self.active_overlays, overlay]
 
     @rx.event
-    def toggle_indicator(self, indicator: str) -> None:
-        """兼容旧测试入口。"""
-
-        self.set_indicator_enabled(indicator, indicator not in self.indicators)
+    def set_depth_mode(self, mode: str) -> None:
+        self.depth_mode = mode
 
     @rx.event
-    def set_watchlist(self, symbols: list[str]) -> None:
-        """更新页面自选列表。"""
-
-        self.watchlist = symbols
+    def set_rail_tab(self, tab: str) -> None:
+        self.rail_tab = tab
 
     @rx.event
-    def set_api_base_url(self, value: str) -> None:
-        """切换前端连接的 API 基地址。"""
+    def set_movers_tab(self, tab: str) -> None:
+        self.movers_tab = tab
 
-        self.api_base_url = value.rstrip("/")
-
-    def _refresh_chart_subscription_payload(self) -> None:
-        """刷新图表订阅意图。"""
-
-        self.chart_subscription_payload = (
-            f'{{"action":"subscribe","symbol":"{self.symbol}","period":"{self.period}"}}'
-        )
+    @rx.event
+    def toggle_sort_mode(self) -> None:
+        self.sort_mode = "name" if self.sort_mode == "code" else "code"
